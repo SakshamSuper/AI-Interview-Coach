@@ -1,0 +1,47 @@
+{
+  "dataset_type": "Synthetic development dataset (not real candidate data)",
+  "accuracy": 0.9792,
+  "macro_precision": 0.9677,
+  "macro_recall": 0.956,
+  "macro_f1": 0.9616,
+  "weighted_f1": 0.9791,
+  "confusion_matrix": [
+    [
+      139,
+      1,
+      0
+    ],
+    [
+      1,
+      78,
+      1
+    ],
+    [
+      0,
+      2,
+      18
+    ]
+  ],
+  "per_class_metrics": {
+    "Needs Improvement": {
+      "precision": 0.9929,
+      "recall": 0.9929,
+      "f1_score": 0.9929,
+      "support": 140
+    },
+    "Almost Ready": {
+      "precision": 0.963,
+      "recall": 0.975,
+      "f1_score": 0.9689,
+      "support": 80
+    },
+    "Interview Ready": {
+      "precision": 0.9474,
+      "recall": 0.9,
+      "f1_score": 0.9231,
+      "support": 20
+    }
+  },
+  "model_architecture": "LogisticRegression",
+  "cv_macro_f1": 0.9723
+}

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: interview_coach_backend
+    command: ["uvicorn", "app.backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite:///./data/interview_coach.db
+      - FAISS_INDEX_DIR=./data/knowledge_base/faiss_index
+      - ML_MODEL_PATH=./ml/models/interview_readiness_rf.joblib
+      - ML_SCALER_PATH=./ml/models/readiness_scaler.joblib
+      - APP_ENV=production
+    volumes:
+      - ./data:/app/data
+      - ./ml/models:/app/ml/models
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: interview_coach_frontend
+    command: ["streamlit", "run", "app/frontend/streamlit_app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
