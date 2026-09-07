@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import time
 from abc import ABC, abstractmethod
@@ -92,8 +92,29 @@ class LocalMockLLMClient(BaseLLMClient):
                 ]
             })
 
-        # 2. Answer Evaluation Prompt
-        elif "evaluate" in prompt_lower or "technical_accuracy" in prompt_lower:
+        # 2. Follow-up Question Prompt (Must precede evaluation check because follow-up prompts quote previous evaluations)
+        elif "follow-up" in prompt_lower or "adaptive follow-up" in prompt_lower or "missing concepts:" in prompt_lower:
+            missing_text = "core architectural trade-offs"
+            if "missing concepts:" in prompt_lower:
+                extracted = prompt_lower.split("missing concepts:")[1].split("\n")[0].strip()
+                if extracted and extracted != "none":
+                    missing_text = extracted
+
+            diff = "Easy" if "target difficulty: easy" in prompt_lower or "difficulty: easy" in prompt_lower else (
+                "Hard" if "target difficulty: hard" in prompt_lower or "difficulty: hard" in prompt_lower else "Medium"
+            )
+            return json.dumps({
+                "question": f"In your previous answer, you touched on the high level but did not fully address {missing_text}. Could you walk me step-by-step through how you would implement this and handle its operational trade-offs?",
+                "topic": "System Design & Optimization",
+                "difficulty": diff,
+                "question_type": "Technical Follow-Up",
+                "reason": f"Adaptive remedial follow-up targeting candidate's identified gap: {missing_text}",
+                "expected_concepts": [c.strip().title() for c in missing_text.split(",") if c.strip()] or ["Architecture", "Production Reliability"],
+                "source_context": "Knowledge base grounding on targeted remediation."
+            })
+
+        # 3. Answer Evaluation Prompt
+        elif "evaluate" in prompt_lower or "evaluate_answer" in prompt_lower:
             cand_ans = ""
             if 'candidate answer:\n"' in prompt_lower:
                 cand_ans = prompt_lower.split('candidate answer:\n"')[1].split('"')[0]
@@ -135,31 +156,75 @@ class LocalMockLLMClient(BaseLLMClient):
                 "next_difficulty": next_diff
             })
 
-        # 3. Question Generation / Follow-up Prompt
+            diff = "Easy" if "target difficulty: easy" in prompt_lower or "difficulty: easy" in prompt_lower else (
+                "Hard" if "target difficulty: hard" in prompt_lower or "difficulty: hard" in prompt_lower else "Medium"
+            )
+            return json.dumps({
+                "question": f"In your previous answer, you touched on the high level but did not fully address {missing_text}. Could you walk me step-by-step through how you would implement this and handle its operational trade-offs?",
+                "topic": "System Design & Optimization",
+                "difficulty": diff,
+                "question_type": "Technical Follow-Up",
+                "reason": f"Adaptive remedial follow-up targeting candidate's identified gap: {missing_text}",
+                "expected_concepts": [c.strip().title() for c in missing_text.split(",") if c.strip()] or ["Architecture", "Production Reliability"],
+                "source_context": "Knowledge base grounding on targeted remediation."
+            })
+
+        # 4. Standard Question Generation
         else:
+            diff = "Hard" if "current difficulty: hard" in prompt_lower or "difficulty: hard" in prompt_lower else (
+                "Easy" if "current difficulty: easy" in prompt_lower or "difficulty: easy" in prompt_lower else "Medium"
+            )
             topic = "System Design"
             if "python" in prompt_lower:
                 topic = "Python & OOP"
-                q = "Explain how the Python GIL impacts CPU-bound versus I/O-bound tasks, and how multiprocessing overcomes this limitation."
-                concepts = ["GIL", "CPython mutex", "multiprocessing", "asyncio"]
+                if diff == "Hard":
+                    q = "Analyze CPython bytecode execution, GIL release during I/O operations, and how subinterpreters (PEP 684) aim to achieve true multi-core concurrency in Python."
+                    concepts = ["PEP 684", "Subinterpreters", "GIL bytecode release", "Thread safety"]
+                elif diff == "Easy":
+                    q = "What is the difference between mutable and immutable data types in Python, and how does list comprehension work?"
+                    concepts = ["Mutability", "Tuples vs Lists", "List comprehension"]
+                else:
+                    q = "Explain how the Python GIL impacts CPU-bound versus I/O-bound tasks, and how multiprocessing overcomes this limitation."
+                    concepts = ["GIL", "CPython mutex", "multiprocessing", "asyncio"]
             elif "database" in prompt_lower or "sql" in prompt_lower:
                 topic = "SQL & DBMS"
-                q = "Compare ACID guarantees with BASE in distributed storage, and describe how B+ Tree indexes accelerate point lookups."
-                concepts = ["ACID", "BASE", "B+ Tree", "Leftmost prefix"]
+                if diff == "Hard":
+                    q = "Explain Write-Ahead Logging (WAL) and MVCC internals in PostgreSQL, and how write amplification impacts high-write transactional systems."
+                    concepts = ["WAL", "MVCC", "Write Amplification", "Isolation levels"]
+                elif diff == "Easy":
+                    q = "What is the difference between WHERE and HAVING clauses in SQL, and what does an INNER JOIN accomplish?"
+                    concepts = ["WHERE vs HAVING", "INNER JOIN", "Aggregation"]
+                else:
+                    q = "Compare ACID guarantees with BASE in distributed storage, and describe how B+ Tree indexes accelerate point lookups."
+                    concepts = ["ACID", "BASE", "B+ Tree", "Leftmost prefix"]
             elif "learning" in prompt_lower or "ml" in prompt_lower or "rag" in prompt_lower:
                 topic = "Generative AI & RAG"
-                q = "Describe how a RAG pipeline reduces LLM hallucinations and compare recursive character chunking with semantic chunking."
-                concepts = ["Vector embeddings", "FAISS", "Chunking strategies", "Grounding context"]
+                if diff == "Hard":
+                    q = "How do you implement reciprocal rank fusion (RRF) and hybrid sparse-dense retrieval to minimize hallucination in multi-hop enterprise RAG architectures?"
+                    concepts = ["RRF", "Sparse-Dense Hybrid", "Cross-Encoder Reranking", "Hallucination mitigation"]
+                elif diff == "Easy":
+                    q = "What is the difference between supervised and unsupervised learning, and what role do training/test splits play?"
+                    concepts = ["Supervised Learning", "Unsupervised Learning", "Overfitting prevention"]
+                else:
+                    q = "Describe how a RAG pipeline reduces LLM hallucinations and compare recursive character chunking with semantic chunking."
+                    concepts = ["Vector embeddings", "FAISS", "Chunking strategies", "Grounding context"]
             else:
-                q = "How do you design a scalable microservice architecture to handle high-throughput burst traffic using Kafka and Redis?"
-                concepts = ["Backpressure", "Kafka partitions", "Redis caching", "Horizontal scaling"]
+                if diff == "Hard":
+                    q = "Design a multi-region active-active distributed architecture with conflict-free replicated data types (CRDTs) to resolve concurrent writes."
+                    concepts = ["CRDTs", "Active-Active Multi-Region", "Eventual Consistency", "Partition tolerance"]
+                elif diff == "Easy":
+                    q = "What is the purpose of a load balancer, and how does horizontal scaling differ from vertical scaling?"
+                    concepts = ["Load Balancing", "Horizontal Scaling", "Single Point of Failure"]
+                else:
+                    q = "How do you design a scalable microservice architecture to handle high-throughput burst traffic using Kafka and Redis?"
+                    concepts = ["Backpressure", "Kafka partitions", "Redis caching", "Horizontal scaling"]
 
             return json.dumps({
                 "question": q,
                 "topic": topic,
-                "difficulty": "Medium",
+                "difficulty": diff,
                 "question_type": "Technical",
-                "reason": "Targeting core domain architecture and candidate technical depth.",
+                "reason": f"Targeting core domain architecture at {diff} difficulty reflecting candidate performance.",
                 "expected_concepts": concepts,
                 "source_context": "Technical knowledge base grounding."
             })

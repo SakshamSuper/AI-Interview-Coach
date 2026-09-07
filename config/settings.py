@@ -1,4 +1,4 @@
-﻿import os
+import os
 from functools import lru_cache
 from typing import Literal, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
     TOP_K: int = 4
-    SIMILARITY_THRESHOLD: float = 0.60
+    SIMILARITY_THRESHOLD: float = 0.25
 
     # Database Configuration
     DATABASE_URL: str = "sqlite:///./data/interview_coach.db"
