@@ -27,9 +27,20 @@ from analytics.metrics import aggregate_user_analytics
 from app.backend.schemas.profiles import CandidateProfile, JobProfile
 from llm.structured_output import InterviewQuestion, AnswerEvaluation, RecommendationOutput
 
+# Page identifiers
+PAGE_HOME = "🎯 Home Dashboard"
+PAGE_RESUME = "📄 Resume Intelligence"
+PAGE_JD = "💼 Job Description"
+PAGE_MATCH = "⚖️ Match & Skill Gap"
+PAGE_KB = "📚 Technical Knowledge Base"
+PAGE_INTERVIEW = "🎙️ Live Adaptive Interview"
+PAGE_ANALYTICS = "📊 Analytics & Readiness"
+PAGE_HISTORY = "📜 Interview History"
+PAGE_SETTINGS = "⚙️ Settings & Status"
+
 st.set_page_config(
     page_title="AI Interview Coach - Adaptive Interview Platform",
-    page_icon="??",
+    page_icon="🎯",
     layout="wide"
 )
 
@@ -62,28 +73,28 @@ if not user:
     st.session_state.user_id = user.id
 
 with st.sidebar:
-    st.title("?? AI Interview Coach")
+    st.title("🎯 AI Interview Coach")
     st.caption("Adaptive GenAI & ML Interview Platform")
     st.divider()
     page = st.radio(
         "Navigation",
         [
-            "?? Home Dashboard",
-            "?? Resume Intelligence",
-            "?? Job Description",
-            "? Match & Skill Gap",
-            "?? Technical Knowledge Base",
-            "??? Live Adaptive Interview",
-            "?? Analytics & Readiness",
-            "?? Interview History",
-            "?? Settings & Status"
+            PAGE_HOME,
+            PAGE_RESUME,
+            PAGE_JD,
+            PAGE_MATCH,
+            PAGE_KB,
+            PAGE_INTERVIEW,
+            PAGE_ANALYTICS,
+            PAGE_HISTORY,
+            PAGE_SETTINGS
         ]
     )
     st.divider()
     st.markdown(f"**Candidate**: {user.name}")
     st.caption(f"Target: {user.target_role or 'Senior Engineer'}")
 
-if page == "?? Home Dashboard":
+if page == PAGE_HOME:
     st.title("Interview Performance Dashboard")
     st.caption("Real-time interview readiness, skill alignment, and targeted preparation roadmap.")
 
@@ -119,16 +130,16 @@ if page == "?? Home Dashboard":
         st.subheader("Targeted Focus Areas")
         if analytics_data["weak_areas"]:
             for w in analytics_data["weak_areas"]:
-                st.warning(f"?? {w}")
+                st.warning(f"⚠️ {w}")
         else:
-            st.success("? No critical deficiencies detected in recent attempts.")
+            st.success("✅ No critical deficiencies detected in recent attempts.")
 
-elif page == "?? Resume Intelligence":
+elif page == PAGE_RESUME:
     st.title("Resume Intelligence & Parsing")
     st.caption("Upload PDF, DOCX, or text resume to extract skills, experience, and education.")
 
     uploaded_file = st.file_uploader("Upload Resume File", type=["pdf", "docx", "txt"])
-    if st.button("?? Load Sample ML Engineer Resume"):
+    if st.button("📄 Load Sample ML Engineer Resume"):
         sample_text = """David Miller
 david.miller@example.com | (555) 345-6789 | github.com/davidmiller
 
@@ -172,7 +183,7 @@ Cloud & DevOps: Docker, Kubernetes, AWS, PostgreSQL, Redis"""
         st.write(f"**Email:** {p.contact.email} | **Phone:** {p.contact.phone}")
         st.write("**Extracted Skills:**", ", ".join(p.skills))
 
-elif page == "?? Job Description":
+elif page == PAGE_JD:
     st.title("Job Description Intelligence")
     st.caption("Analyze requirements, required skills, and preferred qualifications.")
 
@@ -185,7 +196,7 @@ Preferred Qualifications:
 - Experience with LangChain and FAISS.
 - Strong System Design and distributed architecture fundamentals.""")
 
-    if st.button("?? Analyze Job Description", type="primary"):
+    if st.button("💼 Analyze Job Description", type="primary"):
         jp = jd_parser.parse(jd_text, default_title="Senior Machine Learning Engineer")
         st.session_state.job_profile = jp
         user_repo.save_job_description(st.session_state.user_id, jp.job_title, jd_text, jp.model_dump())
@@ -198,12 +209,12 @@ Preferred Qualifications:
         c1.write("**Required Skills:** " + ", ".join(jp.required_skills))
         c2.write("**Preferred Skills:** " + ", ".join(jp.preferred_skills))
 
-elif page == "? Match & Skill Gap":
+elif page == PAGE_MATCH:
     st.title("Resume-JD Match & Skill Gap Engine")
     if not st.session_state.candidate_profile or not st.session_state.job_profile:
         st.info("Please ensure both Resume and Job Description are loaded.")
     else:
-        if st.button("? Compute Alignment & Gaps", type="primary") or st.session_state.match_result is None:
+        if st.button("⚖️ Compute Alignment & Gaps", type="primary") or st.session_state.match_result is None:
             res = matching_engine.analyze_match(st.session_state.candidate_profile, st.session_state.job_profile)
             st.session_state.match_result = res
             user_repo.save_skill_gap_analysis(
@@ -226,11 +237,11 @@ elif page == "? Match & Skill Gap":
 
             st.subheader("High Priority Gaps")
             for gap in res.gap_report.high_priority_gaps:
-                st.warning(f"?? {gap.skill} ({gap.gap_priority} Priority) ? Proficiency: {gap.current_proficiency_estimate}%")
+                st.warning(f"⚠️ {gap.skill} ({gap.gap_priority} Priority) — Proficiency: {gap.current_proficiency_estimate}%")
 
-elif page == "?? Technical Knowledge Base":
+elif page == PAGE_KB:
     st.title("Technical Knowledge Base & RAG")
-    if st.button("?? Re-Index Knowledge Base"):
+    if st.button("🔄 Re-Index Knowledge Base"):
         ing = ingest_knowledge_base()
         st.success(f"Re-indexed {ing['total_chunks']} chunks across {len(ing['topics'])} topics!")
 
@@ -249,7 +260,7 @@ elif page == "?? Technical Knowledge Base":
         st.write(f"**Confidence:** {ctx['confidence_score']*100:.1f}%")
         st.text_area("Grounded Context:", ctx["context_text"], height=200)
 
-elif page == "??? Live Adaptive Interview":
+elif page == PAGE_INTERVIEW:
     st.title("Live Adaptive Interview")
 
     if st.session_state.interview_session_id is None or st.session_state.interview_completed:
@@ -259,7 +270,7 @@ elif page == "??? Live Adaptive Interview":
         diff = c2.selectbox("Starting Difficulty", ["Medium", "Easy", "Hard"], index=0)
         num_q = st.slider("Number of Questions", 1, 5, 2)
 
-        if st.button("?? Start Interview", type="primary"):
+        if st.button("🚀 Start Interview", type="primary"):
             cand_p = st.session_state.candidate_profile or CandidateProfile(name=user.name, skills=["Python", "System Design"])
             job_p = st.session_state.job_profile or JobProfile(job_title=role, required_skills=["Python", "RAG"])
             session = int_repo.create_session(st.session_state.user_id, role, difficulty=diff, total_questions=num_q)
@@ -358,7 +369,7 @@ elif page == "??? Live Adaptive Interview":
             st.write(f"**Feedback:** {ev.feedback}")
 
             if session.current_question_index >= session.total_questions:
-                if st.button("?? Finalize & View Results", type="primary"):
+                if st.button("🏁 Finalize & View Results", type="primary"):
                     evals = session.evaluations
                     avg_score = sum(e.overall_score for e in evals) / len(evals) if evals else 70.0
 
@@ -386,7 +397,7 @@ elif page == "??? Live Adaptive Interview":
                     st.rerun()
 
             else:
-                if st.button("?? Next Adaptive Question", type="primary"):
+                if st.button("➡️ Next Adaptive Question", type="primary"):
                     questions = int_repo.get_questions_for_session(session.id)
                     q_res = question_agent.process({
                         "session_id": session.id, "target_role": session.target_role,
@@ -404,7 +415,7 @@ elif page == "??? Live Adaptive Interview":
                     st.session_state.current_evaluation = None
                     st.rerun()
 
-elif page == "?? Analytics & Readiness":
+elif page == PAGE_ANALYTICS:
     st.title("Performance Analytics & ML Readiness")
     analytics_data = aggregate_user_analytics(user_id=st.session_state.user_id, db=db)
 
@@ -430,14 +441,14 @@ elif page == "?? Analytics & Readiness":
         for p in (rec.learning_priorities or []):
             st.markdown(f"- **{p}**")
 
-elif page == "?? Interview History":
+elif page == PAGE_HISTORY:
     st.title("Interview History")
     sessions = int_repo.list_sessions_for_user(st.session_state.user_id)
     if not sessions:
         st.info("No recorded sessions yet.")
     else:
         for s in sessions:
-            with st.expander(f"Session #{s.id} ? {s.target_role} | Score: {s.overall_score or 'In Progress'}% | {s.status}"):
+            with st.expander(f"Session #{s.id} — {s.target_role} | Score: {s.overall_score or 'In Progress'}% | {s.status}"):
                 st.write(f"**Difficulty:** {s.difficulty} | **Readiness:** {s.readiness_label or 'N/A'}")
                 for q in s.questions:
                     st.markdown(f"**Q{q.question_number} [{q.topic}]:** {q.question_text}")
@@ -446,7 +457,7 @@ elif page == "?? Interview History":
                         if q.answer.evaluation:
                             st.caption(f"Score: {q.answer.evaluation.overall_score}% | Feedback: {q.answer.evaluation.feedback}")
 
-elif page == "?? Settings & Status":
+elif page == PAGE_SETTINGS:
     st.title("Settings & System Status")
     s = get_settings()
     st.write(f"**LLM Provider:** `{s.LLM_PROVIDER}`")
