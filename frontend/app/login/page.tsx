@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { BrainCircuit, LogIn, Loader2, Mail, CheckCircle2 } from "lucide-react";
 
@@ -12,22 +13,16 @@ export default function LoginPage() {
   async function handleGoogleOAuth() {
     setLoading(true);
     try {
-      const res = await signIn("google-account", {
+      await signIn("google-account", {
         email: googleEmail,
         name: googleName,
-        redirect: false,
         callbackUrl: "/",
+        redirect: true,
       });
-      if (res?.ok || !res?.error) {
-        window.location.href = "/";
-      } else {
-        // Fallback direct navigation if error
-        window.location.href = "/";
-      }
     } catch {
       window.location.href = "/";
     } finally {
-      setLoading(false);
+      window.location.href = "/";
     }
   }
 
@@ -110,6 +105,15 @@ export default function LoginPage() {
             )}
             <span>{loading ? "Signing in..." : "Continue as Saksham"}</span>
           </button>
+
+          <div className="mt-3 text-center">
+            <Link
+              href="/"
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline inline-flex items-center gap-1"
+            >
+              Enter Dashboard directly →
+            </Link>
+          </div>
 
           {/* Account selector or edit */}
           <div className="mt-4 pt-3 border-t border-slate-100">

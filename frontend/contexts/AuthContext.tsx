@@ -13,12 +13,12 @@ interface AuthUser {
 }
 
 const defaultAuth: AuthUser = {
-  userId: null,
-  name: "Candidate",
-  email: "",
+  userId: 1,
+  name: "Saksham Aggarwal",
+  email: "sakshamaggarwal2475@gmail.com",
   image: null,
-  targetRole: null,
-  isLoading: true,
+  targetRole: "Senior Machine Learning Engineer",
+  isLoading: false,
 };
 
 const AuthContext = createContext<AuthUser>(defaultAuth);
