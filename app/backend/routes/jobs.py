@@ -1,4 +1,4 @@
-﻿from typing import Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.backend.schemas.profiles import JobAnalyzeRequest, JobAnalyzeResponse, JobProfile

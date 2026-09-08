@@ -1,4 +1,4 @@
-﻿import re
+import re
 import os
 from typing import Dict, List, Optional
 import pypdf
@@ -68,7 +68,12 @@ def extract_text_from_docx(docx_path: str) -> str:
 SECTION_ALIASES: Dict[str, List[str]] = {
     "summary": ["summary", "professional summary", "about me", "profile", "objective", "career objective"],
     "skills": ["skills", "technical skills", "core competencies", "skills & tools", "technologies", "expertise"],
-    "experience": ["experience", "work experience", "professional experience", "employment history", "work history"],
+    "experience": [
+        "experience", "work experience", "professional experience", "employment history", "work history",
+        "experience & certifications", "experience and certifications", "experience certifications",
+        "work experience & certifications", "work experience and certifications", "work experience certifications",
+        "professional experience & certifications", "professional experience and certifications"
+    ],
     "education": ["education", "academic background", "educational qualifications", "academics"],
     "projects": ["projects", "personal projects", "academic projects", "key projects"],
     "certifications": ["certifications", "licenses & certifications", "courses & certifications", "accreditations"],

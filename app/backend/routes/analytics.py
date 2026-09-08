@@ -1,4 +1,4 @@
-﻿from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.backend.dependencies.db import get_db

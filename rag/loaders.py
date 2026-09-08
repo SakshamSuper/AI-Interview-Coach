@@ -1,4 +1,4 @@
-﻿import os
+import os
 from typing import List, Dict, Any
 from langchain_core.documents import Document
 from nlp.preprocessing import extract_text_from_file, clean_text

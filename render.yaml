@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: ai-interview-coach-backend
+    runtime: python
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: "uvicorn app.backend.main:app --host 0.0.0.0 --port $PORT"
+    plan: standard
+    healthCheckPath: /health
+    disk:
+      name: coach-data
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        value: sqlite:////var/data/interview_coach.db
+      - key: FAISS_INDEX_DIR
+        value: /var/data/knowledge_base/faiss_index
+      - key: LLM_PROVIDER
+        value: groq
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_API_KEY
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: WHISPER_MODEL
+        value: tiny
+      - key: WHISPER_DEVICE
+        value: cpu
+      - key: WHISPER_COMPUTE_TYPE
+        value: int8

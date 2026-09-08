@@ -1,4 +1,4 @@
-﻿from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 from llm.structured_output import InterviewQuestion, AnswerEvaluation, RecommendationOutput
@@ -65,3 +65,4 @@ class InterviewSessionSummary(BaseModel):
     completed_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
+

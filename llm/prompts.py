@@ -1,4 +1,4 @@
-﻿"""
+"""
 Dedicated, versioned prompt templates for AI Interview Coach.
 Designed for grounded, adaptive interviewing and objective evaluation.
 """
@@ -9,30 +9,34 @@ Candidate Profile:
 - Name: {candidate_name}
 - Extracted Skills: {candidate_skills}
 - Experience Highlights: {experience_summary}
+- Projects: {candidate_projects}
 
-Job Requirements & Gaps:
+Job Requirements & Context:
 - Target Role: {target_role}
 - Current Difficulty: {current_difficulty}
+- Target Topic: {target_topic}
 - High-Priority Skill Gaps: {skill_gaps}
+- Job Required Skills: {job_required_skills}
 - Question Number: {question_number} of {total_questions}
 - Previously Covered Topics: {previous_topics}
+- Previously Asked Questions (DO NOT REPEAT): {previous_questions}
 
 Technical Knowledge Base Grounding:
 {rag_context}
 
 INSTRUCTIONS:
-1. Formulate a technical interview question targeted at the current difficulty ({current_difficulty}).
-2. Focus on an uncovered topic or a high-priority skill gap.
-3. Ground the question in real engineering trade-offs or production architectures.
-4. Output MUST be valid JSON adhering strictly to the schema below. Do not wrap in extra prose.
+1. Formulate a technical interview question specifically targeted at {target_role} in the domain of {target_topic} at {current_difficulty} difficulty.
+2. DO NOT repeat, rephrase, or duplicate any question listed under Previously Asked Questions.
+3. Focus on testing real production engineering trade-offs, architecture decisions, or problem-solving.
+4. Output MUST be valid JSON adhering strictly to the schema below. Do not wrap in extra prose or code fences.
 
 JSON Schema:
 {{
   "question": "The complete question text",
-  "topic": "The primary technical topic (e.g., Python & OOP, System Design, SQL, ML, Cloud)",
+  "topic": "{target_topic}",
   "difficulty": "{current_difficulty}",
   "question_type": "Technical",
-  "reason": "Why this question was chosen given the candidate profile and job requirements",
+  "reason": "Why this question was chosen given the target role, candidate profile, and topic",
   "expected_concepts": ["concept 1", "concept 2", "concept 3"],
   "source_context": "Brief summary of technical knowledge grounding"
 }}
@@ -51,14 +55,18 @@ Previous Evaluation:
 - Missing Concepts: {missing_concepts}
 - Weaknesses Identified: {weaknesses}
 
+Target Topic: {current_topic}
 Target Difficulty: {current_difficulty}
+Previously Asked Questions (DO NOT REPEAT): {previous_questions}
+
 RAG Technical Context:
 {rag_context}
 
 INSTRUCTIONS:
-1. The candidate missed or partially explained specific concepts. Formulate an adaptive follow-up question that tests their depth or asks them how they would address the missing components in a production system.
-2. Adapt to the difficulty: {current_difficulty}.
-3. Return strictly valid JSON.
+1. The candidate missed or partially explained specific concepts: {missing_concepts}. Formulate an adaptive follow-up question that directly tests their depth on these concepts within the scope of {target_role}.
+2. DO NOT repeat the previous question or any question listed in Previously Asked Questions.
+3. Adapt to the difficulty: {current_difficulty}.
+4. Return strictly valid JSON adhering to the schema below.
 
 JSON Schema:
 {{

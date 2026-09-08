@@ -1,0 +1,70 @@
+[
+  {
+    "role": "Software Engineer",
+    "session_id": 160,
+    "questions": [
+      "Explain the internal mechanics of a Hash Table, comparing collision resolution via separate chaining versus open addressing, and how load factor governs resizing.",
+      "In your previous response regarding data structures & algorithms, you touched on the high level but did not fully address monitoring telemetry, dead letter queues. Could you walk me step-by-step through how you would implement this in a production system?",
+      "Building on your explanation, let's explore monitoring telemetry, dead letter queues. How would you architect this to handle operational edge cases and fault tolerance?"
+    ],
+    "topics": [
+      "Data Structures & Algorithms",
+      "data structures & algorithms",
+      "data structures & algorithms"
+    ],
+    "unique_in_session": true,
+    "overall_score": 72.0,
+    "readiness_label": "Almost Ready"
+  },
+  {
+    "role": "Machine Learning Engineer",
+    "session_id": 161,
+    "questions": [
+      "How do you detect and mitigate vanishing and exploding gradients when training deep neural networks, and how do residual connections and layer normalization help?",
+      "In your previous response regarding deep learning & optimization, you touched on the high level but did not fully address monitoring telemetry, dead letter queues. Could you walk me step-by-step through how you would implement this in a production system?",
+      "Building on your explanation, let's explore monitoring telemetry, dead letter queues. How would you architect this to handle operational edge cases and fault tolerance?"
+    ],
+    "topics": [
+      "Deep Learning & Optimization",
+      "deep learning & optimization",
+      "deep learning & optimization"
+    ],
+    "unique_in_session": true,
+    "overall_score": 72.0,
+    "readiness_label": "Almost Ready"
+  },
+  {
+    "role": "Data Scientist",
+    "session_id": 162,
+    "questions": [
+      "How do you calculate statistical power and required sample size for an A/B test given a baseline conversion rate, minimum detectable effect (MDE), and variance?",
+      "In your previous response regarding experimentation & a/b testing, you touched on the high level but did not fully address monitoring telemetry, dead letter queues. Could you walk me step-by-step through how you would implement this in a production system?",
+      "Building on your explanation, let's explore monitoring telemetry, dead letter queues. How would you architect this to handle operational edge cases and fault tolerance?"
+    ],
+    "topics": [
+      "Experimentation & A/B Testing",
+      "experimentation & a/b testing",
+      "experimentation & a/b testing"
+    ],
+    "unique_in_session": true,
+    "overall_score": 72.0,
+    "readiness_label": "Almost Ready"
+  },
+  {
+    "role": "Backend Engineer",
+    "session_id": 163,
+    "questions": [
+      "Explain the CAP Theorem and explain why modern distributed datastores are classified under the PACELC theorem to describe latency vs consistency during normal operations.",
+      "In your previous response regarding distributed systems & consensus, you touched on the high level but did not fully address monitoring telemetry, dead letter queues. Could you walk me step-by-step through how you would implement this in a production system?",
+      "Building on your explanation, let's explore monitoring telemetry, dead letter queues. How would you architect this to handle operational edge cases and fault tolerance?"
+    ],
+    "topics": [
+      "Distributed Systems & Consensus",
+      "distributed systems & consensus",
+      "distributed systems & consensus"
+    ],
+    "unique_in_session": true,
+    "overall_score": 72.0,
+    "readiness_label": "Almost Ready"
+  }
+]

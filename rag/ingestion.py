@@ -1,4 +1,4 @@
-﻿import os
+import os
 import time
 from typing import Dict, Any
 from rag.loaders import kb_loader

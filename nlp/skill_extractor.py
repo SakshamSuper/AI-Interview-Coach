@@ -1,4 +1,4 @@
-﻿import re
+import re
 from typing import Dict, List, Set, Tuple
 
 # Comprehensive Technical Skill Taxonomy

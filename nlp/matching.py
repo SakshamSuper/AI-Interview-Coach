@@ -1,4 +1,4 @@
-﻿from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set
 from app.backend.schemas.profiles import CandidateProfile, JobProfile
 from app.backend.schemas.matching import (
     MatchAnalysisResponse, SkillMatchItem, SkillGapReport,

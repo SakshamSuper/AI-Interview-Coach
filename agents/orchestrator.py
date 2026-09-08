@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any, Literal
+from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, END
 from agents.state import InterviewState
 from agents.resume_agent import resume_agent

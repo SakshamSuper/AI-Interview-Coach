@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_TOKENS: int = 2048
 
+    # Local Whisper STT Configuration (faster-whisper — runs fully offline)
+    WHISPER_MODEL: str = "small"        # tiny, base, small, medium, large-v2, large-v3
+    WHISPER_DEVICE: str = "cpu"         # cpu or cuda
+    WHISPER_COMPUTE_TYPE: str = "int8"  # int8 (cpu), float16 (cuda), float32
+
     # RAG & Embedding Configuration
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     VECTOR_STORE_TYPE: Literal["faiss", "chroma"] = "faiss"
@@ -41,8 +46,12 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "data/uploads"
     TEMP_MEDIA_DIR: str = "data/temp_media"
 
+    # Authentication & CORS
+    NEXTAUTH_SECRET: str = ""  # Shared secret for verifying NextAuth.js JWTs
+    CORS_ORIGINS: str = "*"    # Comma-separated list of allowed origins, or * for all
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )

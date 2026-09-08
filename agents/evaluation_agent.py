@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any
+from typing import Dict, Any
 from agents.state import InterviewState
 from llm.model import llm_service
 from rag.retriever import rag_retriever

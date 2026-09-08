@@ -1,4 +1,4 @@
-﻿import re
+import re
 from typing import List, Optional, Dict, Any
 from app.backend.schemas.profiles import JobProfile
 from nlp.preprocessing import clean_text

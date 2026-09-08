@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any
+from typing import Dict, Any
 from agents.state import InterviewState
 from config.logger import logger
 

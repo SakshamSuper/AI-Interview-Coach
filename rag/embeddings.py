@@ -1,4 +1,4 @@
-﻿from typing import List
+from typing import List
 from langchain_core.embeddings import Embeddings
 from nlp.similarity import generate_embeddings
 

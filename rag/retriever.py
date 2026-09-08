@@ -1,4 +1,4 @@
-﻿import os
+import os
 from typing import List, Tuple, Dict, Any, Optional
 from langchain_core.documents import Document
 from rag.vector_store import vector_store

@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import sys
 from typing import Optional
 from config.settings import get_settings

@@ -1,0 +1,70 @@
+[
+  {
+    "role": "Software Engineer",
+    "session_id": 164,
+    "questions": [
+      "Explain the internal mechanics of a Hash Table, comparing collision resolution via separate chaining versus open addressing, and how load factor governs resizing.",
+      "Design an LRU-K Cache eviction policy that tracks the last K references to prevent cache pollution from one-off sequential scans, analyzing time and space complexity.",
+      "Design a globally distributed unique ID generator (like Twitter Snowflake) that generates 64-bit strictly monotonic or k-sorted IDs without a centralized coordinator database."
+    ],
+    "topics": [
+      "Data Structures & Algorithms",
+      "Data Structures & Algorithms",
+      "System Architecture & Scalability"
+    ],
+    "unique_in_session": true,
+    "overall_score": 84.0,
+    "readiness_label": "Interview Ready"
+  },
+  {
+    "role": "Machine Learning Engineer",
+    "session_id": 165,
+    "questions": [
+      "How do you detect and mitigate vanishing and exploding gradients when training deep neural networks, and how do residual connections and layer normalization help?",
+      "Analyze the convergence dynamics of AdamW versus SGD with Nesterov momentum, focusing on how decoupled weight decay fixes L2 regularization in adaptive gradient methods.",
+      "Design a high-throughput GPU serving cluster using Triton Inference Server with dynamic tensor parallelism, pipeline parallelism, and speculative decoding for a 70B parameter model."
+    ],
+    "topics": [
+      "Deep Learning & Optimization",
+      "Deep Learning & Optimization",
+      "Model Serving & Inference"
+    ],
+    "unique_in_session": true,
+    "overall_score": 84.0,
+    "readiness_label": "Interview Ready"
+  },
+  {
+    "role": "Data Scientist",
+    "session_id": 166,
+    "questions": [
+      "How do you calculate statistical power and required sample size for an A/B test given a baseline conversion rate, minimum detectable effect (MDE), and variance?",
+      "How do you design an A/B experimentation platform that prevents peeking bias (p-hacking) using sequential probability ratio testing (SPRT) and handles two-sided marketplace network spillover?",
+      "Explain the mathematical formulation of SHAP (Shapley Additive Explanations) values based on cooperative game theory, and how TreeSHAP achieves polynomial-time feature attribution."
+    ],
+    "topics": [
+      "Experimentation & A/B Testing",
+      "Experimentation & A/B Testing",
+      "Predictive Modeling & Feature Engineering"
+    ],
+    "unique_in_session": true,
+    "overall_score": 84.0,
+    "readiness_label": "Interview Ready"
+  },
+  {
+    "role": "Backend Engineer",
+    "session_id": 167,
+    "questions": [
+      "Explain the CAP Theorem and explain why modern distributed datastores are classified under the PACELC theorem to describe latency vs consistency during normal operations.",
+      "Explain the Raft consensus algorithm, detailing leader election state transitions, log replication safety invariants, and how network partitions are handled without split-brain.",
+      "Explain Write-Ahead Logging (WAL) and PostgreSQL Multi-Version Concurrency Control (MVCC) internals, explaining write amplification, tuple bloat, and autovacuum tuning."
+    ],
+    "topics": [
+      "Distributed Systems & Consensus",
+      "Distributed Systems & Consensus",
+      "Concurrency & Transaction Management"
+    ],
+    "unique_in_session": true,
+    "overall_score": 84.0,
+    "readiness_label": "Interview Ready"
+  }
+]

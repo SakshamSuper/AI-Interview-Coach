@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from database.models import InterviewSession, AnswerEvaluation, SkillGapAnalysis
 
@@ -66,10 +66,13 @@ def aggregate_user_analytics(user_id: Optional[int], db: Session) -> Dict[str, A
     avg_comp = (sum(e.completeness for e in all_evaluations) / len(all_evaluations)) if all_evaluations else 0.0
     avg_clar = (sum(e.clarity for e in all_evaluations) / len(all_evaluations)) if all_evaluations else 0.0
 
-    latest_session = completed_sessions[-1] if completed_sessions else sessions[-1]
-    readiness_label = latest_session.readiness_label or (
-        "Interview Ready" if avg_overall >= 80 else ("Almost Ready" if avg_overall >= 60 else "Needs Improvement")
-    )
+    if completed_sessions:
+        latest_session = completed_sessions[-1]
+        readiness_label = latest_session.readiness_label or (
+            "Interview Ready" if avg_overall >= 80 else ("Almost Ready" if avg_overall >= 60 else "Needs Improvement")
+        )
+    else:
+        readiness_label = "Not Evaluated"
 
     strong_areas = [t for t, s in topic_performance.items() if s >= 75.0]
     weak_areas = [t for t, s in topic_performance.items() if s < 65.0]

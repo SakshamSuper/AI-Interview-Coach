@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator

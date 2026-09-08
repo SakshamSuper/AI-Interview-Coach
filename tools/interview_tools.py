@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any, List
+from typing import Dict, Any, List
 from langchain_core.tools import tool
 from rag.retriever import rag_retriever
 from nlp.similarity import calculate_semantic_similarity

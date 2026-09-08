@@ -1,4 +1,4 @@
-﻿from typing import List, Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.backend.schemas.interviews import (
@@ -192,6 +192,10 @@ def submit_answer(session_id: int, req: AnswerSubmitRequest, db: Session = Depen
         next_difficulty=eval_obj.next_difficulty
     )
 
+    if eval_obj.next_difficulty:
+        session.difficulty = eval_obj.next_difficulty
+        db.commit()
+
     is_last = (session.current_question_index >= session.total_questions)
 
     return AnswerSubmitResponse(
@@ -298,15 +302,42 @@ def get_next_question(session_id: int, db: Session = Depends(get_db)):
     evaluations = session.evaluations
     answers = session.answers
 
+    user_repo = UserRepository(db)
+    cand_profile = None
+    if session.user_id:
+        res_rec = user_repo.get_latest_resume_for_user(session.user_id)
+        if res_rec and res_rec.parsed_profile:
+            cand_profile = CandidateProfile(**res_rec.parsed_profile)
+    if not cand_profile:
+        cand_profile = CandidateProfile(
+            name="Candidate",
+            skills=["Python", "System Design", "SQL"],
+            experience=[]
+        )
+
+    job_profile = None
+    if session.user_id:
+        jd_rec = user_repo.get_latest_job_description_for_user(session.user_id)
+        if jd_rec and jd_rec.parsed_profile:
+            job_profile = JobProfile(**jd_rec.parsed_profile)
+    if not job_profile:
+        job_profile = JobProfile(
+            job_title=session.target_role,
+            required_skills=["System Design", "Microservices", "Python"],
+            preferred_skills=["Docker", "Kubernetes"]
+        )
+
+    skill_gaps = [s for s in job_profile.required_skills if s not in set(cand_profile.skills)]
+
     state = {
         "session_id": session_id,
         "target_role": session.target_role,
         "current_difficulty": session.difficulty,
         "current_question_index": session.current_question_index,
         "total_questions": session.total_questions,
-        "candidate_profile": {},
-        "job_profile": {"job_title": session.target_role, "required_skills": ["System Design", "Microservices", "Python"]},
-        "skill_gaps": ["System Design", "Microservices", "Docker"],
+        "candidate_profile": cand_profile.model_dump(),
+        "job_profile": job_profile.model_dump(),
+        "skill_gaps": skill_gaps,
         "previous_topics": [q.topic for q in questions],
         "question_history": [{"question": q.question_text, "topic": q.topic} for q in questions],
         "answer_history": [a.candidate_answer for a in answers],
@@ -354,7 +385,216 @@ def get_interview_session(session_id: int, db: Session = Depends(get_db)):
     session = int_repo.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Interview session not found.")
-    return session
+    # The ORM InterviewSession uses `id` as its primary key column name.
+    # The response schema InterviewSessionSummary exposes it as `session_id`.
+    # FastAPI's response model serialization cannot bridge this rename
+    # automatically, so we construct the schema explicitly here.
+    return InterviewSessionSummary(
+        session_id=session.id,
+        user_id=session.user_id,
+        target_role=session.target_role,
+        interview_type=session.interview_type,
+        difficulty=session.difficulty,
+        status=session.status,
+        total_questions=session.total_questions,
+        current_question_index=session.current_question_index,
+        overall_score=session.overall_score,
+        readiness_score=session.readiness_score,
+        readiness_label=session.readiness_label,
+        created_at=session.created_at,
+        completed_at=session.completed_at,
+    )
+
+
+
+@router.get("/interviews/", response_model=List[InterviewSessionSummary])
+def list_interviews(user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Return all sessions for a user, newest first."""
+    int_repo = InterviewRepository(db)
+    sessions = int_repo.list_sessions_for_user(user_id=user_id)
+    return [
+        InterviewSessionSummary(
+            session_id=s.id,
+            user_id=s.user_id,
+            target_role=s.target_role,
+            interview_type=s.interview_type,
+            difficulty=s.difficulty,
+            status=s.status,
+            total_questions=s.total_questions,
+            current_question_index=s.current_question_index,
+            overall_score=s.overall_score,
+            readiness_score=s.readiness_score,
+            readiness_label=s.readiness_label,
+            created_at=s.created_at,
+            completed_at=s.completed_at,
+        )
+        for s in sessions
+    ]
+
+
+@router.get("/ml/readiness")
+def get_ml_readiness(user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """Invoke the existing ML readiness classifier using aggregated evaluation data.
+
+    Feature derivation (FEATURE_COLUMNS order preserved exactly as in ml/preprocessing.py):
+      technical_score       — avg AnswerEvaluation.technical_accuracy across all sessions
+      relevance_score       — avg AnswerEvaluation.relevance
+      completeness_score    — avg AnswerEvaluation.completeness
+      clarity_score         — avg AnswerEvaluation.clarity
+      communication_score   — avg AnswerEvaluation.communication
+      answer_length         — avg word count of InterviewAnswer.candidate_answer (REAL)
+      keyword_coverage      — avg(SkillMatchItem.match_score)/100 from SkillGapAnalysis.detailed_matches (REAL)
+      difficulty_numeric    — avg of per-question difficulty_numeric: Easy=1, Medium=2, Hard=3 (REAL)
+      attempt_number        — number of completed sessions for this user
+      previous_score        — avg AnswerEvaluation.overall_score across all sessions
+      average_previous_score— same as previous_score (aggregate equivalent)
+      topic_accuracy        — avg AnswerEvaluation.technical_accuracy (best proxy for topic-specific perf)
+    """
+    from analytics.metrics import aggregate_user_analytics
+    from database.models import InterviewSession, InterviewAnswer, InterviewQuestion
+
+    analytics = aggregate_user_analytics(user_id=user_id, db=db)
+    n = analytics.get("completed_interviews", 0)
+
+    if n == 0:
+        return {
+            "has_data": False,
+            "message": "No completed interview sessions yet. Complete an interview to get your ML readiness prediction.",
+            "readiness_label": None,
+            "readiness_score": None,
+        }
+
+    # ── Derive answer_length from real persisted candidate_answer text ────────
+    DIFF_MAP = {"Easy": 1, "Medium": 2, "Hard": 3}
+
+    answer_lengths = []
+    difficulty_nums = []
+    fallback_answer_length = False
+    fallback_difficulty = False
+
+    # Query all answers+questions for this user's sessions
+    session_q = db.query(InterviewSession)
+    if user_id:
+        session_q = session_q.filter(InterviewSession.user_id == user_id)
+    user_sessions = session_q.all()
+
+    for session in user_sessions:
+        for answer in session.answers:
+            # answer_length: word count of actual candidate text
+            text = answer.candidate_answer or ""
+            words = len(text.split()) if text.strip() else None
+            if words is not None and words > 0:
+                answer_lengths.append(float(words))
+            # difficulty_numeric: from the linked question's difficulty column
+            if answer.question and answer.question.difficulty:
+                diff_str = answer.question.difficulty
+                diff_num = DIFF_MAP.get(diff_str)
+                if diff_num is not None:
+                    difficulty_nums.append(float(diff_num))
+
+    # Compute averages; fall back to documented defaults if data missing
+    if answer_lengths:
+        avg_answer_length = round(sum(answer_lengths) / len(answer_lengths), 1)
+    else:
+        avg_answer_length = 80.0       # documented fallback — no answer text available
+        fallback_answer_length = True
+
+    if difficulty_nums:
+        avg_difficulty_numeric = round(sum(difficulty_nums) / len(difficulty_nums), 3)
+    else:
+        avg_difficulty_numeric = 2.0   # documented fallback — no difficulty data available
+        fallback_difficulty = True
+
+    # ── Derive keyword_coverage from persisted SkillGapAnalysis.detailed_matches ──
+    #
+    # Training definition (ml/dataset.py line 46):
+    #   kw_cov = clip(latent_ability * 0.85 + noise, 0.1, 1.0)
+    #   Represents: fraction of JD keywords covered by the candidate, on 0-to-1 scale.
+    #
+    # Real inference equivalent (semantically identical):
+    #   avg(SkillMatchItem.match_score for all JD skills) / 100.0
+    #   where match_score ∈ [0, 100] = how well each JD keyword is covered by the candidate.
+    #   Computed by nlp.matching.MatchingEngine.analyze_match() and already persisted
+    #   in SkillGapAnalysis.detailed_matches (JSON column, no schema change required).
+    #
+    # Fallback (user never ran skill-gap analysis):
+    #   0.5 — the neutral prior (training-set mean ≈ 0.46), NOT avg_overall/100.
+    #   Explicitly flagged in keyword_coverage_source so it is never mistaken for real data.
+    from database.repositories.user_repository import UserRepository
+    import json as _json
+
+    user_repo = UserRepository(db)
+    skill_gap_rec = user_repo.get_latest_skill_gap_analysis(user_id=user_id)
+
+    kw_coverage: float
+    kw_coverage_source: str
+    fallback_keyword_coverage = False
+
+    if skill_gap_rec and skill_gap_rec.detailed_matches:
+        dm = skill_gap_rec.detailed_matches
+        # detailed_matches is stored as Python list via SQLAlchemy JSON column;
+        # may be a raw string if driver serializes manually.
+        if isinstance(dm, str):
+            dm = _json.loads(dm)
+        if dm and isinstance(dm, list):
+            scores = [item.get("match_score", 0.0) for item in dm if isinstance(item, dict)]
+            if scores:
+                kw_coverage = round(sum(scores) / (len(scores) * 100.0), 4)
+                kw_coverage_source = "real(avg_skill_match_score/100, SkillGapAnalysis.detailed_matches)"
+            else:
+                kw_coverage = 0.5
+                kw_coverage_source = "neutral_prior(0.5, detailed_matches_empty)"
+                fallback_keyword_coverage = True
+        else:
+            kw_coverage = 0.5
+            kw_coverage_source = "neutral_prior(0.5, detailed_matches_malformed)"
+            fallback_keyword_coverage = True
+    else:
+        # User has never run a matching / skill-gap analysis.
+        # Use training-set neutral prior (≈0.5) rather than a semantically wrong proxy.
+        kw_coverage = 0.5
+        kw_coverage_source = "neutral_prior(0.5, no_skill_gap_analysis_run)"
+        fallback_keyword_coverage = True
+
+    # ── Build full feature vector (order must match FEATURE_COLUMNS exactly) ──
+    avg_overall = analytics.get("average_overall_score", 0.0)
+    avg_tech = analytics.get("average_technical_score", 0.0)
+
+    features = {
+        "technical_score":        avg_tech,
+        "relevance_score":        analytics.get("average_relevance_score", 0.0),
+        "completeness_score":     analytics.get("average_completeness_score", 0.0),
+        "clarity_score":          analytics.get("average_clarity_score", 0.0),
+        "communication_score":    analytics.get("average_communication_score", 0.0),
+        "answer_length":          avg_answer_length,         # REAL: avg word count
+        "keyword_coverage":       kw_coverage,               # REAL: avg JD skill match / 100
+        "difficulty_numeric":     avg_difficulty_numeric,    # REAL: avg mapped difficulty
+        "attempt_number":         float(n),
+        "previous_score":         avg_overall,
+        "average_previous_score": avg_overall,
+        "topic_accuracy":         avg_tech,
+    }
+
+    prediction = ml_predictor.predict_readiness(features)
+    prediction["has_data"] = True
+    prediction["sessions_used"] = n
+    prediction["feature_inputs"] = {
+        "avg_technical":            features["technical_score"],
+        "avg_relevance":            features["relevance_score"],
+        "avg_completeness":         features["completeness_score"],
+        "avg_clarity":              features["clarity_score"],
+        "avg_communication":        features["communication_score"],
+        "answer_length":            avg_answer_length,
+        "answer_length_source":     "fallback(80.0)" if fallback_answer_length else "real(avg_word_count)",
+        "keyword_coverage":         kw_coverage,
+        "keyword_coverage_source":  kw_coverage_source,
+        "difficulty_numeric":       avg_difficulty_numeric,
+        "difficulty_source":        "fallback(2.0)" if fallback_difficulty else "real(avg_per_question)",
+        "attempt_number":           float(n),
+        "sessions_completed":       n,
+        "avg_overall":              avg_overall,
+    }
+    return prediction
 
 
 @router.get("/recommendations/{session_id}", response_model=RecommendationOutput)
@@ -371,3 +611,4 @@ def get_interview_recommendations(session_id: int, db: Session = Depends(get_db)
         learning_priorities=rec.learning_priorities or [],
         practice_questions=rec.practice_questions or []
     )
+

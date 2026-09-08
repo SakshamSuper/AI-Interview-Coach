@@ -1,4 +1,4 @@
-﻿import time
+import time
 from typing import List, Dict, Any
 from rag.retriever import InterviewRAGRetriever
 

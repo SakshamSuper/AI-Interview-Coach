@@ -1,4 +1,4 @@
-﻿import os
+import os
 import joblib
 import numpy as np
 from typing import Dict, Any, Optional
@@ -90,7 +90,13 @@ class MLReadinessPredictor:
             "strengths_identified": strengths,
             "improvement_areas": improvements,
             "model_architecture": type(model).__name__,
-            "disclaimer": "Predicted by Random Forest model trained on labeled synthetic development data."
+            "disclaimer": (
+                f"Predicted by {type(model).__name__} model trained on labeled synthetic development data. "
+                "Note: the model artifact file is named 'interview_readiness_rf.joblib' for historical reasons; "
+                "at training time LogisticRegression achieved equal or higher CV macro-F1 than RandomForest "
+                "and was selected as the winner. Metrics are development/evaluation metrics only — "
+                "not validated on real-world candidate data."
+            )
         }
 
 

@@ -1,4 +1,4 @@
-﻿import os
+import os
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
@@ -76,7 +76,10 @@ def get_resume(resume_id: int, db: Session = Depends(get_db)):
     rec = repo.get_resume(resume_id)
     if not rec:
         raise HTTPException(status_code=404, detail="Resume not found.")
-    profile = CandidateProfile(**rec.parsed_profile)
+    try:
+        profile = resume_parser.parse(rec.raw_text, rec.filename) if rec.raw_text else CandidateProfile(**rec.parsed_profile)
+    except Exception:
+        profile = CandidateProfile(**rec.parsed_profile)
     return ResumeUploadResponse(
         resume_id=rec.id,
         filename=rec.filename,

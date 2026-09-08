@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from typing import Dict, Any
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 from ml.preprocessing import INVERSE_LABEL_MAPPING

@@ -1,4 +1,4 @@
-﻿import io
+import io
 import pytest
 from fastapi.testclient import TestClient
 from app.backend.main import app
@@ -108,3 +108,40 @@ Software Engineer at Acme Corp | 2022 - 2024
     jd_data = jd_resp.json()
     assert jd_data["profile"]["job_title"] == "Backend Python Developer"
     assert "Python" in jd_data["profile"]["required_skills"]
+
+
+def test_multiple_project_extraction():
+    raw_text = """
+John Doe
+john@example.com
+
+PROJECTS
+AI Posture Analysis & LLM Agent Assistant — Python, OpenCV, MediaPipe, GPT4All (LLM), Notion API, OCR | GitHub
+● Designed and trained a real-time computer vision pipeline using MediaPipe landmarks.
+● Extended the system with a local LLM, building a tool-calling integration to Notion database API.
+Crypto Analyst Pro — Live Market Data & LLM-Grounded Analysis — JavaScript, Anthropic API, Prompt Engineering | GitHub
+● Built a structured Anthropic API prompt/response pipeline for sentiment analysis.
+● Performed EDA and trained ML models on historical price/volume data.
+
+EXPERIENCE & CERTIFICATIONS
+Microsoft Learn Student Ambassador Jun 2024 – Present
+● Promoted Microsoft Azure and AI technologies through workshops.
+"""
+    profile = resume_parser.parse(raw_text, "multi_project_resume.txt")
+    assert len(profile.projects) == 2, f"Expected 2 projects, got {len(profile.projects)}"
+    
+    p1 = profile.projects[0]
+    p2 = profile.projects[1]
+    
+    assert p1.name == "AI Posture Analysis & LLM Agent Assistant"
+    assert "Python" in p1.technologies or "MediaPipe" in p1.technologies or "Computer Vision" in p1.technologies
+    assert len(p1.description) > 20
+    
+    assert p2.name == "Crypto Analyst Pro"
+    assert "JavaScript" in p2.technologies or "Machine Learning" in p2.technologies or "Large Language Models" in p2.technologies
+    assert len(p2.description) > 20
+
+    # Ensure experience section was not swallowed into projects
+    assert len(profile.experience) >= 1
+    assert "Microsoft" in profile.experience[0].title or (profile.experience[0].company and "Microsoft" in profile.experience[0].company)
+

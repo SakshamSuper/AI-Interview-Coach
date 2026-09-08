@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from typing import List, Union
 from config.settings import get_settings
 from config.logger import logger

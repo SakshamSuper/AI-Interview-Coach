@@ -1,4 +1,4 @@
-﻿from typing import List
+from typing import List
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from config.settings import get_settings

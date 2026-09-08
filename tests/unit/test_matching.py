@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from fastapi.testclient import TestClient
 from app.backend.main import app
 from nlp.resume_parser import resume_parser

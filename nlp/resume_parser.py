@@ -1,4 +1,4 @@
-﻿import re
+import re
 from typing import List, Optional, Dict, Any
 from app.backend.schemas.profiles import (
     CandidateProfile, ContactInfo, EducationItem, ExperienceItem, ProjectItem
@@ -158,21 +158,77 @@ class ResumeParser:
     def _extract_projects(self, proj_text: str) -> List[ProjectItem]:
         if not proj_text:
             return []
-        items = []
-        chunks = re.split(r"\n(?=[A-Z0-9][a-zA-Z0-9\s:–\-]{2,40}\n)", proj_text)
 
-        for chunk in chunks:
-            lines = [l.strip() for l in chunk.split("\n") if l.strip()]
-            if not lines:
+        def is_bullet(line: str) -> bool:
+            s = line.strip()
+            return bool(re.match(r"^[\s•●\-\*–—>]", s)) or s.startswith(("\u25cf", "\u2022", "-", "*", ">", "•"))
+
+        def is_project_header(line: str) -> bool:
+            s = line.strip()
+            if not s:
+                return False
+            if is_bullet(s):
+                return False
+            # Wrapped continuation lines starting with lowercase are never headers
+            if s[0].islower():
+                return False
+            # Project titles do not end with terminal punctuation
+            if s.endswith((".", ";", ",")):
+                return False
+            # Title with separator (—, –, |, :) or links
+            if any(sep in s for sep in ["|", "—", "–", " - ", "http", "github"]):
+                return True
+            # Short title-cased or uppercase phrase of 1-8 words
+            words = s.split()
+            if 1 <= len(words) <= 8 and (all(w[0].isupper() for w in words if w.isalpha()) or s.isupper()):
+                return True
+            return False
+
+        lines = [l.strip() for l in proj_text.split("\n") if l.strip()]
+        chunks: List[List[str]] = []
+        curr: List[str] = []
+
+        for line in lines:
+            if is_project_header(line) and curr:
+                chunks.append(curr)
+                curr = [line]
+            else:
+                curr.append(line)
+        if curr:
+            chunks.append(curr)
+
+        items = []
+        for chunk_lines in chunks:
+            if not chunk_lines:
                 continue
-            name = lines[0].split(":")[0].split("|")[0].strip()
-            desc = "\n".join(lines[1:]) if len(lines) > 1 else ""
-            techs = skill_extractor.extract_skills(chunk)["all_skills"]
+            title_line = chunk_lines[0]
+            parts = [p.strip() for p in title_line.split("|")]
+            main_title = parts[0]
+            url = None
+            for p in parts[1:]:
+                if "http" in p.lower():
+                    url = p
+                elif "github" in p.lower():
+                    url = "https://github.com"
+
+            subparts = re.split(r"\s*[—–]\s*|\s+-\s+", main_title)
+            proj_name = subparts[0].strip() if subparts else main_title.strip()
+
+            desc_lines = chunk_lines[1:]
+            if len(subparts) == 3:
+                desc_lines.insert(0, subparts[1].strip())
+            elif len(subparts) == 2 and not any(k in subparts[1].lower() for k in ["python", "react", "javascript", "api", "cv", "ml", "opencv"]):
+                desc_lines.insert(0, subparts[1].strip())
+
+            desc = "\n".join(desc_lines)
+            chunk_full_text = "\n".join(chunk_lines)
+            techs = skill_extractor.extract_skills(chunk_full_text)["all_skills"]
 
             items.append(ProjectItem(
-                name=name,
+                name=proj_name,
                 description=desc,
-                technologies=techs
+                technologies=techs,
+                url=url
             ))
 
         return items
