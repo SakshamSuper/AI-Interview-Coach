@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Interview Coach — Next.js Frontend
+
+This is the Next.js 16 (Turbopack) frontend for AI Interview Coach.
 
 ## Getting Started
 
