@@ -16,14 +16,12 @@ export default function LoginPage() {
         email: googleEmail,
         name: googleName,
         redirect: false,
+        callbackUrl: "/",
       });
-      if (res?.error) {
-        await signIn("google-account", {
-          email: googleEmail,
-          name: googleName,
-          callbackUrl: "/",
-        });
+      if (res?.ok || !res?.error) {
+        window.location.href = "/";
       } else {
+        // Fallback direct navigation if error
         window.location.href = "/";
       }
     } catch {
