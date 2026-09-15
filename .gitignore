@@ -38,11 +38,9 @@ ENV/
 *.sqlite3
 data/interview_coach.db
 
-# Vector indices & models
-data/knowledge_base/faiss_index/
+# Transient uploads & temporary media
 data/uploads/
 data/temp_media/
-ml/models/*.joblib
 
 # IDE & OS files
 .vscode/

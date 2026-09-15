@@ -1,0 +1,22 @@
+{
+  "total_chunks": 31,
+  "dimension": 384,
+  "topics": [
+    "Data Structures & Algorithms",
+    "Generative AI & RAG",
+    "Machine Learning & AI",
+    "System Design",
+    "SQL & DBMS",
+    "Cloud & DevOps",
+    "Python & OOP"
+  ],
+  "documents": [
+    "genai_rag_langchain.md",
+    "python_oop.md",
+    "machine_learning.md",
+    "cloud_devops.md",
+    "dsa_algorithms.md",
+    "sql_dbms.md",
+    "system_design.md"
+  ]
+}
