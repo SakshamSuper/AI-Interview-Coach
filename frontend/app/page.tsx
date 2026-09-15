@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { cn } from "@/lib/utils/cn";
 
 // ─── API types ────────────────────────────────────────────────────────────────
 
@@ -126,30 +127,39 @@ function KpiCard({
   icon,
   sub,
   isLoading,
+  accentColor = "indigo",
 }: {
   label: string;
   value: React.ReactNode;
   icon: React.ReactNode;
   sub?: React.ReactNode;
   isLoading: boolean;
+  accentColor?: "indigo" | "emerald" | "blue" | "purple";
 }) {
+  const accentStyles = {
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-200/80 ring-4 ring-indigo-50/60",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-200/80 ring-4 ring-emerald-50/60",
+    blue: "bg-blue-50 text-blue-600 border-blue-200/80 ring-4 ring-blue-50/60",
+    purple: "bg-purple-50 text-purple-600 border-purple-200/80 ring-4 ring-purple-50/60",
+  };
+
   return (
-    <Card>
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</span>
-          <span className="text-slate-400">{icon}</span>
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+        <div className={cn("w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-110", accentStyles[accentColor])}>
+          {icon}
         </div>
-        <div className="text-2xl font-bold text-slate-900 tracking-tight min-h-[2rem]">
-          {isLoading ? (
-            <span className="inline-block w-16 h-6 bg-slate-100 rounded animate-pulse" />
-          ) : (
-            value
-          )}
-        </div>
-        {sub && <div className="mt-2">{sub}</div>}
       </div>
-    </Card>
+      <div className="text-3xl font-black text-slate-900 tracking-tight min-h-[2.5rem] flex items-center">
+        {isLoading ? (
+          <span className="inline-block w-20 h-7 bg-slate-100 rounded-md animate-pulse" />
+        ) : (
+          value
+        )}
+      </div>
+      {sub && <div className="mt-3.5 pt-2.5 border-t border-slate-100">{sub}</div>}
+    </div>
   );
 }
 
@@ -157,56 +167,85 @@ function OnboardingGuide() {
   const steps = [
     {
       step: "01",
-      icon: <Upload className="w-5 h-5 text-blue-600" />,
+      icon: <Upload className="w-5 h-5 text-indigo-600" />,
+      badge: "Step 01",
       title: "Upload Your Resume",
-      desc: "Paste or upload your resume so the system can build your candidate profile.",
+      desc: "Upload your PDF or DOCX resume so the AI can build your candidate profile and skills graph.",
       href: "/resume",
       cta: "Upload Resume",
+      borderAccent: "hover:border-indigo-300 hover:shadow-indigo-100/50",
+      badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200/80",
+      iconBg: "bg-indigo-50/80 border-indigo-100 text-indigo-600 ring-4 ring-indigo-50/50",
     },
     {
       step: "02",
       icon: <Briefcase className="w-5 h-5 text-blue-600" />,
+      badge: "Step 02",
       title: "Add a Job Description",
-      desc: "Provide the target role. The skill-gap engine will identify what to focus on.",
+      desc: "Provide the target role specifications to trigger the hybrid semantic matching engine.",
       href: "/jobs",
       cta: "Add Job Description",
+      borderAccent: "hover:border-blue-300 hover:shadow-blue-100/50",
+      badgeColor: "bg-blue-50 text-blue-700 border-blue-200/80",
+      iconBg: "bg-blue-50/80 border-blue-100 text-blue-600 ring-4 ring-blue-50/50",
     },
     {
       step: "03",
       icon: <PlayCircle className="w-5 h-5 text-emerald-600" />,
-      title: "Start Your Interview",
-      desc: "Begin an adaptive session. Questions are tailored to your gaps and experience level.",
+      badge: "Step 03",
+      title: "Start Live Interview",
+      desc: "Begin an adaptive session with multi-criteria rubric evaluation and real-time voice coaching.",
       href: "/interview",
       cta: "Start Interview",
+      borderAccent: "hover:border-emerald-300 hover:shadow-emerald-100/50",
+      badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+      iconBg: "bg-emerald-50/80 border-emerald-100 text-emerald-600 ring-4 ring-emerald-50/50",
     },
   ];
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="w-4 h-4 text-blue-600" />
-        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">Get Started</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 ring-4 ring-indigo-50/50">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Fast-Track Setup</h2>
+            <p className="text-xs text-slate-500">Complete these 3 steps to unlock full AI interview preparation</p>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {steps.map((s) => (
-          <Card key={s.step} className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-500 font-mono">{s.step}</span>
-              <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center">
-                {s.icon}
-              </div>
-            </div>
+          <div
+            key={s.step}
+            className={cn(
+              "bg-white border-2 border-slate-200/90 rounded-2xl p-6 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between gap-5 group",
+              s.borderAccent
+            )}
+          >
             <div>
-              <div className="text-sm font-semibold text-slate-800 mb-1">{s.title}</div>
-              <div className="text-xs text-slate-500 leading-relaxed">{s.desc}</div>
+              <div className="flex items-center justify-between mb-4">
+                <span className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full border font-mono tracking-wide", s.badgeColor)}>
+                  {s.badge}
+                </span>
+                <div className={cn("w-11 h-11 rounded-2xl border flex items-center justify-center transition-transform duration-200 group-hover:scale-110 shadow-sm", s.iconBg)}>
+                  {s.icon}
+                </div>
+              </div>
+              <h3 className="text-base font-bold text-slate-900 mb-1.5 group-hover:text-indigo-600 transition-colors">
+                {s.title}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">{s.desc}</p>
             </div>
-            <Link href={s.href} className="mt-auto">
-              <Button variant="outline" size="sm" className="w-full justify-between">
-                {s.cta}
-                <ChevronRight className="w-3.5 h-3.5" />
+            <Link href={s.href} className="mt-auto block pt-2">
+              <Button variant="outline" size="sm" className="w-full justify-between font-bold py-2 border-slate-200 bg-slate-50/80 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all group-hover:border-slate-300">
+                <span>{s.cta}</span>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
               </Button>
             </Link>
-          </Card>
+          </div>
         ))}
       </div>
     </div>
@@ -313,26 +352,26 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* ── Greeting Header ───────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <div className="pt-2 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Good morning, {name && name !== "Candidate" ? name.split(" ")[0] : "Candidate"}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">Continue your interview preparation journey.</p>
+          <p className="text-sm text-slate-600 mt-1">Continue your interview preparation journey.</p>
 
           {skillGap?.gap_report?.job_description_info?.target_role && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Target Role</span>
-              <span className="text-sm font-semibold text-slate-800">
+            <div className="mt-2.5 flex items-center gap-2">
+              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Target Role</span>
+              <span className="text-sm font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-100">
                 {skillGap.gap_report.job_description_info.target_role}
               </span>
             </div>
           )}
         </div>
         <Link href="/interview">
-          <Button variant="primary" size="sm">
-            <Sparkles className="w-3.5 h-3.5" />
-            Continue Preparation
+          <Button variant="primary" size="md" className="shadow-sm font-semibold">
+            <Sparkles className="w-4 h-4 mr-1.5" />
+            Start Interview
           </Button>
         </Link>
       </div>
@@ -342,10 +381,11 @@ export default function Dashboard() {
         <KpiCard
           label="Total Sessions"
           value={totalSessions}
-          icon={<Layers className="w-4 h-4" />}
+          icon={<Layers className="w-5 h-5" />}
+          accentColor="indigo"
           sub={
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               SQLite persisted
             </div>
           }
@@ -354,12 +394,13 @@ export default function Dashboard() {
         <KpiCard
           label="Avg Overall Score"
           value={avgScore !== null ? `${avgScore.toFixed(1)}%` : "—"}
-          icon={<Target className="w-4 h-4" />}
+          icon={<Target className="w-5 h-5" />}
+          accentColor="emerald"
           sub={
             avgScore !== null ? (
               <ProgressBar value={avgScore} size="sm" color="emerald" showPercentage={false} />
             ) : (
-              <span className="text-[11px] text-slate-400 italic">Complete an interview to calculate</span>
+              <span className="text-xs text-slate-400 italic">Complete an interview to calculate</span>
             )
           }
           isLoading={isLoading}
@@ -367,14 +408,15 @@ export default function Dashboard() {
         <KpiCard
           label="Job Match"
           value={matchScore !== null ? `${matchScore.toFixed(1)}%` : "—"}
-          icon={<BarChart2 className="w-4 h-4" />}
+          icon={<BarChart2 className="w-5 h-5" />}
+          accentColor="blue"
           sub={
             skillGap ? (
               <Badge variant={matchBadgeVariant(skillGap.match_category)} size="sm">
                 {skillGap.match_category}
               </Badge>
             ) : (
-              <span className="text-[11px] text-slate-400 italic">Run matching to see score</span>
+              <span className="text-xs text-slate-400 italic">Run matching to see score</span>
             )
           }
           isLoading={isLoading}
@@ -383,12 +425,13 @@ export default function Dashboard() {
           label="Interview Readiness"
           value={
             readinessTier === "Not Evaluated" ? (
-              <span className="text-lg text-slate-400">Not Evaluated</span>
+              <span className="text-base font-bold text-slate-400">Not Evaluated</span>
             ) : (
               readinessTier
             )
           }
-          icon={<Zap className="w-4 h-4" />}
+          icon={<Zap className="w-5 h-5" />}
+          accentColor="purple"
           sub={
             mlScore !== null ? (
               <div className="flex items-center gap-2 flex-wrap">
@@ -398,7 +441,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <Badge variant={readinessBadgeVariant(readinessTier)} size="sm">
-                {readinessTier === "Not Evaluated" ? "Complete an interview first" : "ML Assessment"}
+                {readinessTier === "Not Evaluated" ? "Complete interview first" : "ML Assessment"}
               </Badge>
             )
           }
@@ -518,10 +561,12 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <div>
-                <CardTitle>Performance Dimensions</CardTitle>
+                <CardTitle className="text-base font-bold text-slate-900">Performance Dimensions</CardTitle>
                 <p className="text-xs text-slate-500 mt-0.5">Multi-axis evaluation breakdown</p>
               </div>
-              <Target className="w-4 h-4 text-blue-600" />
+              <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-indigo-600 ring-4 ring-indigo-50/50 shadow-sm">
+                <Target className="w-4.5 h-4.5" />
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {scoreDimensions.length > 0 ? (
@@ -554,23 +599,25 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Skill Gaps</CardTitle>
+              <CardTitle className="text-base font-bold text-slate-900">Skill Gaps</CardTitle>
               <p className="text-xs text-slate-500 mt-0.5">
                 {skillGap ? "From job description analysis" : "Run a job match to identify gaps"}
               </p>
             </div>
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 ring-4 ring-amber-50/50 shadow-sm">
+              <AlertTriangle className="w-4.5 h-4.5" />
+            </div>
           </CardHeader>
           <CardContent>
             {!skillGap ? (
               <EmptyState
-                icon={<AlertTriangle className="w-5 h-5 text-amber-600" />}
+                icon={<AlertTriangle className="w-6 h-6 text-amber-600" />}
                 title="No Skill Analysis Yet"
                 description="Upload a job description and run matching to identify your skill gaps."
                 action={
                   <Link href="/matching">
-                    <Button variant="outline" size="sm">
-                      Run Job Match <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                    <Button variant="outline" size="sm" className="font-semibold shadow-sm hover:border-amber-300 hover:bg-amber-50/50">
+                      Run Job Match <ChevronRight className="w-4 h-4 ml-1 text-slate-400" />
                     </Button>
                   </Link>
                 }
@@ -617,23 +664,25 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <div>
-              <CardTitle>Recommended Focus</CardTitle>
+              <CardTitle className="text-base font-bold text-slate-900">Recommended Focus</CardTitle>
               <p className="text-xs text-slate-500 mt-0.5">
                 {weakAreas.length > 0 ? "Based on your interview performance" : "Awaiting interview data"}
               </p>
             </div>
-            <BookOpen className="w-4 h-4 text-blue-600" />
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-indigo-600 ring-4 ring-indigo-50/50 shadow-sm">
+              <BookOpen className="w-4.5 h-4.5" />
+            </div>
           </CardHeader>
           <CardContent>
             {weakAreas.length === 0 && strongAreas.length === 0 ? (
               <EmptyState
-                icon={<BookOpen className="w-5 h-5 text-blue-600" />}
+                icon={<BookOpen className="w-6 h-6 text-indigo-600" />}
                 title="No Focus Data Yet"
                 description="Complete an interview session to see personalized topic recommendations."
                 action={
                   <Link href="/interview">
-                    <Button variant="outline" size="sm">
-                      Start Interview <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                    <Button variant="outline" size="sm" className="font-semibold shadow-sm hover:border-indigo-300 hover:bg-indigo-50/50">
+                      Start Interview <ChevronRight className="w-4 h-4 ml-1 text-slate-400" />
                     </Button>
                   </Link>
                 }
