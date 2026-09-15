@@ -1,6 +1,21 @@
 from typing import List
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+try:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ImportError:
+    try:
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+    except ImportError:
+        class RecursiveCharacterTextSplitter:
+            def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50, separators: list = None):
+                self.chunk_size = chunk_size
+                self.chunk_overlap = chunk_overlap
+            def split_text(self, text: str) -> list[str]:
+                step = max(1, self.chunk_size - self.chunk_overlap)
+                chunks = [text[i:i + self.chunk_size] for i in range(0, len(text), step)]
+                return chunks or [text]
+
 from config.settings import get_settings
 
 settings = get_settings()
