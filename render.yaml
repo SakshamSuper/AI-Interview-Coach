@@ -22,3 +22,7 @@ services:
         value: sqlite:///./data/interview_coach.db
       - key: FAISS_INDEX_DIR
         value: ./data/knowledge_base/faiss_index
+      - key: MALLOC_TRIM_THRESHOLD_
+        value: "65536"
+      - key: WEB_CONCURRENCY
+        value: "1"

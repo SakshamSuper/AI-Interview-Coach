@@ -16,6 +16,12 @@ class VisionAnalyticsPipeline:
     def __init__(self):
         self.mp_pose = None
         self.pose_detector = None
+        self._initialized = False
+
+    def _ensure_initialized(self):
+        if self._initialized:
+            return
+        self._initialized = True
         try:
             import mediapipe as mp
             self.mp_pose = mp.solutions.pose
@@ -29,6 +35,7 @@ class VisionAnalyticsPipeline:
             logger.warning(f"MediaPipe initialization warning: {e}. Running in simulation/fallback mode.")
 
     def process_frames(self, frames: List[np.ndarray], fps: float = 30.0) -> Dict[str, Any]:
+        self._ensure_initialized()
         if not frames:
             return {
                 "frame_count": 0,
