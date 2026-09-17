@@ -17,20 +17,40 @@ const PAGE_LABELS: Record<string, string> = {
 
 export function Header() {
   const pathname = usePathname();
-  const [isOnline, setIsOnline] = useState<boolean | null>(null);
+  const [status, setStatus] = useState<"connecting" | "waking" | "online" | "offline">("connecting");
 
   useEffect(() => {
+    let timerId: NodeJS.Timeout;
+    let isMounted = true;
+    let failCount = 0;
+
     async function check() {
       try {
-        const res = await fetch("/api/py/health", { signal: AbortSignal.timeout(4000) });
-        setIsOnline(res.ok);
+        const res = await fetch("/api/py/health", { signal: AbortSignal.timeout(12000) });
+        if (!isMounted) return;
+        if (res.ok) {
+          setStatus("online");
+          failCount = 0;
+          timerId = setTimeout(check, 30000);
+        } else {
+          failCount++;
+          setStatus(failCount >= 3 ? "offline" : "waking");
+          timerId = setTimeout(check, 5000);
+        }
       } catch {
-        setIsOnline(false);
+        if (!isMounted) return;
+        failCount++;
+        setStatus(failCount >= 3 ? "offline" : "waking");
+        timerId = setTimeout(check, 5000);
       }
     }
+
     check();
-    const id = setInterval(check, 30000);
-    return () => clearInterval(id);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timerId);
+    };
   }, []);
 
   const pageLabel = PAGE_LABELS[pathname] ?? "AI Interview Coach";
@@ -38,15 +58,27 @@ export function Header() {
   return (
     <header className="h-12 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0">
       <h1 className="text-sm font-semibold text-slate-800">{pageLabel}</h1>
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+      <div className="flex items-center gap-2 text-xs text-slate-500">
         <span
           className={[
-            "inline-flex w-1.5 h-1.5 rounded-full",
-            isOnline === null ? "bg-slate-400" : isOnline ? "bg-emerald-500" : "bg-red-500",
+            "inline-flex w-2 h-2 rounded-full transition-colors duration-300",
+            status === "online"
+              ? "bg-emerald-500 ring-2 ring-emerald-100"
+              : status === "waking"
+              ? "bg-amber-400 animate-pulse ring-2 ring-amber-100"
+              : status === "connecting"
+              ? "bg-slate-400 animate-pulse"
+              : "bg-rose-500 ring-2 ring-rose-100",
           ].join(" ")}
         />
-        <span>
-          {isOnline === null ? "Connecting" : isOnline ? "API online" : "API offline"}
+        <span className="font-medium text-[11px]">
+          {status === "online"
+            ? "API online"
+            : status === "waking"
+            ? "Waking up server..."
+            : status === "connecting"
+            ? "Connecting..."
+            : "API offline"}
         </span>
       </div>
     </header>

@@ -719,8 +719,11 @@ export default function ResumePage() {
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ detail: "Upload failed." }));
-          throw new Error(err.detail || `Error ${res.status}`);
+          const err = await res.json().catch(() => null);
+          if (res.status === 502 || res.status === 503 || res.status === 504) {
+            throw new Error("Backend server is warming up from sleep. Please wait a few seconds and try again.");
+          }
+          throw new Error(err?.detail || `Upload failed (${res.status}). Please try again.`);
         }
 
         const data: ResumeUploadResponse = await res.json();
@@ -728,7 +731,13 @@ export default function ResumePage() {
         setResult(data);
         setUploadState("success");
       } catch (e: unknown) {
-        setErrorMsg(e instanceof Error ? e.message : "Upload failed. Please try again.");
+        const rawMsg = e instanceof Error ? e.message : "Upload failed.";
+        const isNetworkErr = rawMsg.includes("Failed to fetch") || rawMsg.includes("NetworkError");
+        setErrorMsg(
+          isNetworkErr
+            ? "Cannot reach server. The cloud backend is waking up from sleep — please wait a moment and try again."
+            : rawMsg
+        );
         setUploadState("error");
       }
     },
