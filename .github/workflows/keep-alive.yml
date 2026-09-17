@@ -1,0 +1,18 @@
+﻿name: Keep Render Backend Awake
+
+on:
+  schedule:
+    # Run every 12 minutes (Render free tier sleeps after 15 minutes of inactivity)
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend
+        run: |
+          echo  Pinging backend...
+          curl -sS --max-time 30 https://ai-interview-coach-zb5e.onrender.com/health || true
+          echo Pinging frontend proxy...
+          curl -sS --max-time 30 https://ai-interview-coach-frontend-687t.onrender.com/api/py/health || true
