@@ -29,6 +29,57 @@ A production-deployed, full-stack AI platform for adaptive technical interview c
 
 ---
 
+## 📸 Screenshots
+
+### 🏠 Dashboard
+![Dashboard](docs/screenshots/ss_dashboard.png)
+
+The central hub — personalized greeting, 4 live KPI cards, Fast-Track Setup guide, Skill Gaps, Recommended Focus.
+
+---
+
+### 📄 Resume Upload & Parsing
+![Resume](docs/screenshots/ss_resume.png)
+
+Drag-and-drop PDF/DOCX upload. AI extracts full candidate profile: skills, experience, education, projects, certifications.
+
+---
+
+### 💼 Job Description Analyzer
+![Jobs](docs/screenshots/ss_jobs.png)
+
+Paste any job posting. NLP extracts required/preferred skills, technologies, responsibilities, and ATS keywords.
+
+---
+
+### 🔗 Skill Matching Engine
+![Matching](docs/screenshots/ss_matching.png)
+
+Hybrid semantic match between your resume and the JD. Shows match %, gap report (High/Medium/Low priority), and study paths.
+
+---
+
+### 🎤 Live Interview Session
+![Interview](docs/screenshots/ss_interview.png)
+
+Full LangGraph multi-agent interview. Voice + text input, FAISS RAG questions, real-time 5-dimension AI evaluation.
+
+---
+
+### 📊 Analytics
+![Analytics](docs/screenshots/ss_analytics.png)
+
+Score trend charts, topic mastery breakdown, performance dimensions, and ML readiness classifier results.
+
+---
+
+### 🕒 Interview History
+![History](docs/screenshots/ss_history.png)
+
+Full archive of all sessions with per-question Q&A drill-down, AI feedback, strengths, and weaknesses.
+
+---
+
 ## 📄 Pages & Features
 
 ### 🏠 Dashboard (`/`)
