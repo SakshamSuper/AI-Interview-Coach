@@ -25,12 +25,9 @@ Built from first principles without superficial mockups, hard-coded results, or 
 
 ## 📸 Platform Screenshots
 
-![AI Interview Coach — All Pages](docs/screenshots/collage.png)
+![AI Interview Coach — Live Website Showcase](docs/screenshots/showcase.png)
 
-> **Dashboard · Resume Parser · Job Analyzer · Skill Matching · Live Interview · Analytics · History**  
 > Full feature walkthrough: [FEATURE_SHOWCASE.md](FEATURE_SHOWCASE.md)
-
-
 
 ## Key Features
 
