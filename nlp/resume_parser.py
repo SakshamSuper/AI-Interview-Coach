@@ -21,6 +21,14 @@ class ResumeParser:
         re.compile(r"\b(Associate Degree|High School Diploma)\b", re.IGNORECASE),
     ]
 
+    MONTHS = r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+    DATE_RANGE_REGEX = re.compile(
+        rf"(?:{MONTHS}\.?\s+)?\b(?:19|20)\d{{2}}\b\s*(?:[–\-—]|to)\s*(?:Present|Current|Ongoing|(?:{MONTHS}\.?\s+)?\b(?:19|20)\d{{2}}\b)",
+        re.IGNORECASE
+    )
+    CERT_REGEX = re.compile(r"\b(?:certified|certification|certificate|licence|license)\b", re.IGNORECASE)
+    ROLE_KEYWORDS = ["contributor", "ambassador", "engineer", "developer", "intern", "fellow", "lead", "manager", "consultant", "analyst", "specialist", "assistant", "researcher"]
+
     def parse(self, raw_text: str, filename: str = "resume.pdf") -> CandidateProfile:
         text = clean_text(raw_text)
         sections = detect_sections(text)
@@ -29,9 +37,13 @@ class ResumeParser:
         name = self._extract_name(sections.get("header", ""), text, filename)
         skills_dict = skill_extractor.extract_skills(text)
         education = self._extract_education(sections.get("education", ""))
-        experience = self._extract_experience(sections.get("experience", ""))
+        experience, certs_from_exp = self._extract_experience(sections.get("experience", ""))
         projects = self._extract_projects(sections.get("projects", ""))
         certifications = self._extract_list_items(sections.get("certifications", ""))
+        if certs_from_exp:
+            for c in certs_from_exp:
+                if c not in certifications:
+                    certifications.append(c)
         achievements = self._extract_list_items(sections.get("achievements", ""))
         summary = sections.get("summary", "")
 
@@ -97,53 +109,143 @@ class ResumeParser:
         items = []
         lines = [l.strip() for l in edu_text.split("\n") if l.strip()]
 
-        for line in lines:
-            degree_found = None
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            deg_match = None
             for pat in self.DEGREE_PATTERNS:
                 m = pat.search(line)
                 if m:
-                    degree_found = m.group(0)
+                    deg_match = m.group(0)
                     break
 
-            if degree_found:
-                years = self.YEAR_REGEX.findall(line)
-                grad_year = years[-1] if years else None
-                # Rest of line as institution/field
-                remainder = line.replace(degree_found, "")
-                if grad_year:
-                    remainder = remainder.replace(grad_year, "")
-                cleaned_inst = re.sub(r"[,|\-•()]+", " ", remainder).strip()
+            if deg_match:
+                degree = deg_match
+                field = None
+                inst = None
+                year = None
+
+                # Extract field and degree remainder from current line
+                rem = line.replace(degree, "").strip(" —–-|•,")
+                in_m = re.search(r"\bin\s+([A-Za-z\s&]+?)(?:\s*[—–|-]|\s+CGPA|\s+GPA|$)", rem, re.IGNORECASE)
+                if in_m:
+                    field = in_m.group(1).strip()
+                elif rem and not any(kw in rem.lower() for kw in ["cgpa", "gpa", "percentage", "%"]):
+                    field = rem
+
+                # Check if next line contains institution / year
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1]
+                    next_deg = any(pat.search(next_line) for pat in self.DEGREE_PATTERNS)
+                    if not next_deg:
+                        years = self.YEAR_REGEX.findall(next_line)
+                        if years:
+                            year = " - ".join(years) if len(years) >= 2 else years[-1]
+                        inst_rem = next_line
+                        for y in years:
+                            inst_rem = inst_rem.replace(y, "")
+                        cleaned_inst = re.sub(r"[,|\-•–—()]+", " ", inst_rem).strip()
+                        if cleaned_inst:
+                            inst = cleaned_inst
+                        i += 1  # consumed next line
+
+                if not year:
+                    years = self.YEAR_REGEX.findall(line)
+                    if years:
+                        year = " - ".join(years) if len(years) >= 2 else years[-1]
+
+                if not inst:
+                    inst = "University"
 
                 items.append(EducationItem(
-                    degree=degree_found,
-                    institution=cleaned_inst if cleaned_inst else "University",
-                    year=grad_year
+                    degree=degree,
+                    institution=inst,
+                    year=year,
+                    field_of_study=field
                 ))
+            i += 1
 
         return items
 
-    def _extract_experience(self, exp_text: str) -> List[ExperienceItem]:
+    def _extract_experience(self, exp_text: str) -> Tuple[List[ExperienceItem], List[str]]:
         if not exp_text:
-            return []
+            return [], []
+
+        raw_lines = [l.strip() for l in exp_text.split("\n") if l.strip()]
+        exp_lines = []
+        extracted_certs = []
+
+        # Step 1: Filter out lines that are clearly certifications rather than employment roles
+        for line in raw_lines:
+            s = line.strip()
+            has_date = bool(self.DATE_RANGE_REGEX.search(s))
+            has_cert = bool(self.CERT_REGEX.search(s))
+
+            if has_cert and not has_date:
+                cleaned_c = re.sub(r"^[•●\-\*–—>\d.]+\s*", "", s).strip()
+                if cleaned_c:
+                    extracted_certs.append(cleaned_c)
+            else:
+                exp_lines.append(line)
+
+        # Step 2: Group lines into distinct experience roles
+        def is_experience_header(line_text: str) -> bool:
+            clean_l = re.sub(r"^[•●\-\*–—>\d.]+\s*", "", line_text).strip()
+            if self.DATE_RANGE_REGEX.search(clean_l):
+                return True
+            if any(sep in clean_l for sep in ["|", "—", "–"]) and any(kw in clean_l.lower() for kw in self.ROLE_KEYWORDS):
+                return True
+            return False
+
+        chunks: List[List[str]] = []
+        curr_chunk: List[str] = []
+
+        for line in exp_lines:
+            if is_experience_header(line) and curr_chunk:
+                chunks.append(curr_chunk)
+                curr_chunk = [line]
+            else:
+                curr_chunk.append(line)
+        if curr_chunk:
+            chunks.append(curr_chunk)
+
         items = []
-        chunks = re.split(r"\n(?=[A-Z][a-zA-Z\s]{2,40}(?:\||–|-|,|\bat\b))", exp_text)
-
         for chunk in chunks:
-            lines = [l.strip() for l in chunk.split("\n") if l.strip()]
-            if not lines:
+            if not chunk:
                 continue
-            title_line = lines[0]
-            desc = "\n".join(lines[1:]) if len(lines) > 1 else ""
-            skills = skill_extractor.extract_skills(chunk)["all_skills"]
+            raw_title_line = re.sub(r"^[•●\-\*–—>\d.]+\s*", "", chunk[0]).strip()
 
-            # Try to split title and company
-            parts = re.split(r"[|–\-•,]|\bat\b", title_line)
-            title = parts[0].strip() if parts else "Software Engineer"
-            company = parts[1].strip() if len(parts) > 1 else None
+            # Extract duration cleanly
+            duration = None
+            date_m = self.DATE_RANGE_REGEX.search(raw_title_line)
+            if date_m:
+                duration = date_m.group(0).strip()
+                title_line = raw_title_line.replace(duration, "").strip(" |–-—•,")
+            else:
+                years = self.YEAR_REGEX.findall(raw_title_line)
+                duration = " - ".join(years) if len(years) >= 2 else (years[0] if years else None)
+                title_line = raw_title_line
 
-            # Look for duration
-            years = self.YEAR_REGEX.findall(title_line)
-            duration = " - ".join(years) if len(years) >= 2 else (years[0] if years else None)
+            # Extract title and company without letting dates/Present contaminate
+            company = None
+            if " at " in title_line:
+                parts = title_line.split(" at ", 1)
+                title, company = parts[0].strip(), parts[1].strip()
+            elif "|" in title_line:
+                parts = title_line.split("|", 1)
+                title, company = parts[0].strip(), parts[1].strip()
+            elif "–" in title_line or "—" in title_line:
+                parts = re.split(r"[–—]", title_line, 1)
+                title, company = parts[0].strip(), parts[1].strip()
+            else:
+                title = title_line if title_line else "Software Engineer"
+
+            # Clean company if it looks like a date/status
+            if company and any(c.lower() in company.lower() for c in ["present", "current", "202"]):
+                company = None
+
+            desc = "\n".join(chunk[1:]) if len(chunk) > 1 else ""
+            skills = skill_extractor.extract_skills("\n".join(chunk))["all_skills"]
 
             items.append(ExperienceItem(
                 title=title,
@@ -153,7 +255,7 @@ class ResumeParser:
                 skills_used=skills
             ))
 
-        return items
+        return items, extracted_certs
 
     def _extract_projects(self, proj_text: str) -> List[ProjectItem]:
         if not proj_text:
@@ -238,10 +340,19 @@ class ResumeParser:
             return []
         items = []
         for line in text.split("\n"):
-            cleaned = re.sub(r"^[\s•\-*>\d.]+", "", line).strip()
-            if cleaned and len(cleaned) > 2:
+            s = line.strip()
+            if not s:
+                continue
+            is_bullet = bool(re.match(r"^[\s•●\-\*–—>\d.]+", line))
+            cleaned = re.sub(r"^[\s•●\-\*–—>\d.]+", "", line).strip()
+
+            # Merge wrapped continuation lines into previous item
+            if not is_bullet and items and (s.startswith("(") or s[0].islower() or len(s.split()) < 8):
+                items[-1] = items[-1] + " " + s
+            elif cleaned and len(cleaned) > 2:
                 items.append(cleaned)
         return items
 
 
 resume_parser = ResumeParser()
+
