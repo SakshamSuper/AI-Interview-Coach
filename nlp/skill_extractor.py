@@ -41,7 +41,9 @@ TAXONOMY: Dict[str, Dict[str, List[str]]] = {
         "LangChain": ["langchain"],
         "LangGraph": ["langgraph"],
         "LlamaIndex": ["llamaindex", "llama-index"],
-        "Hugging Face": ["huggingface", "hugging face", "transformers"]
+        "Hugging Face": ["huggingface", "hugging face", "transformers"],
+        "Streamlit": ["streamlit"],
+        "OpenCV": ["opencv", "cv2"]
     },
     "databases": {
         "PostgreSQL": ["postgresql", "postgres"],

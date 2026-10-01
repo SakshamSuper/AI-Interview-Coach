@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from app.backend.schemas.profiles import (
     CandidateProfile, ContactInfo, EducationItem, ExperienceItem, ProjectItem
 )
@@ -265,70 +265,63 @@ class ResumeParser:
             s = line.strip()
             return bool(re.match(r"^[\s•●\-\*–—>]", s)) or s.startswith(("\u25cf", "\u2022", "-", "*", ">", "•"))
 
-        def is_project_header(line: str) -> bool:
-            s = line.strip()
-            if not s:
-                return False
-            if is_bullet(s):
-                return False
-            # Wrapped continuation lines starting with lowercase are never headers
-            if s[0].islower():
-                return False
-            # Project titles do not end with terminal punctuation
-            if s.endswith((".", ";", ",")):
-                return False
-            # Title with separator (—, –, |, :) or links
-            if any(sep in s for sep in ["|", "—", "–", " - ", "http", "github"]):
-                return True
-            # Short title-cased or uppercase phrase of 1-8 words
-            words = s.split()
-            if 1 <= len(words) <= 8 and (all(w[0].isupper() for w in words if w.isalpha()) or s.isupper()):
-                return True
-            return False
-
         lines = [l.strip() for l in proj_text.split("\n") if l.strip()]
-        chunks: List[List[str]] = []
-        curr: List[str] = []
+        projects_raw: List[List[str]] = []
+        curr_proj: List[str] = []
+        in_bullets = False
 
         for line in lines:
-            if is_project_header(line) and curr:
-                chunks.append(curr)
-                curr = [line]
+            if is_bullet(line):
+                in_bullets = True
+                curr_proj.append(line)
             else:
-                curr.append(line)
-        if curr:
-            chunks.append(curr)
+                if in_bullets and curr_proj:
+                    # After seeing bullet points, a new non-bullet line marks a new project
+                    projects_raw.append(curr_proj)
+                    curr_proj = [line]
+                    in_bullets = False
+                else:
+                    # Still gathering title/subtitle/tech stack before the first bullet
+                    curr_proj.append(line)
+
+        if curr_proj:
+            projects_raw.append(curr_proj)
 
         items = []
-        for chunk_lines in chunks:
-            if not chunk_lines:
+        for chunk in projects_raw:
+            if not chunk:
                 continue
-            title_line = chunk_lines[0]
-            parts = [p.strip() for p in title_line.split("|")]
-            main_title = parts[0]
+            header_lines = [l for l in chunk if not is_bullet(l)]
+            bullet_lines = [l for l in chunk if is_bullet(l)]
+            if not header_lines:
+                continue
+
+            raw_title = header_lines[0]
+            parts = [p.strip() for p in raw_title.split("|")]
+            subparts = re.split(r"\s*[—–]\s*|\s+-\s+", parts[0])
+            name = subparts[0].strip() if subparts else parts[0].strip()
+
             url = None
-            for p in parts[1:]:
-                if "http" in p.lower():
-                    url = p
-                elif "github" in p.lower():
-                    url = "https://github.com"
+            for hl in header_lines:
+                for p in hl.split("|"):
+                    if "http" in p.lower():
+                        url = p.strip()
+                    elif "github" in p.lower():
+                        url = "https://github.com"
 
-            subparts = re.split(r"\s*[—–]\s*|\s+-\s+", main_title)
-            proj_name = subparts[0].strip() if subparts else main_title.strip()
+            desc_lines = []
+            if len(subparts) > 1:
+                desc_lines.append(subparts[1].strip())
+            for hl in header_lines[1:]:
+                if hl.lower() in ["github", "link", "demo", "live"]:
+                    continue
+                desc_lines.append(hl)
+            desc_lines.extend(bullet_lines)
 
-            desc_lines = chunk_lines[1:]
-            if len(subparts) == 3:
-                desc_lines.insert(0, subparts[1].strip())
-            elif len(subparts) == 2 and not any(k in subparts[1].lower() for k in ["python", "react", "javascript", "api", "cv", "ml", "opencv"]):
-                desc_lines.insert(0, subparts[1].strip())
-
-            desc = "\n".join(desc_lines)
-            chunk_full_text = "\n".join(chunk_lines)
-            techs = skill_extractor.extract_skills(chunk_full_text)["all_skills"]
-
+            techs = skill_extractor.extract_skills("\n".join(chunk))["all_skills"]
             items.append(ProjectItem(
-                name=proj_name,
-                description=desc,
+                name=name,
+                description="\n".join(desc_lines),
                 technologies=techs,
                 url=url
             ))
