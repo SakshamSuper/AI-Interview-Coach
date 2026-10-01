@@ -15,6 +15,23 @@ Built from first principles without superficial mockups, hard-coded results, or 
 
 ---
 
+## 🚀 Live Demo
+
+| Service | URL |
+|---------|-----|
+| 🖥️ Frontend | [ai-interview-coach-frontend-687t.onrender.com](https://ai-interview-coach-frontend-687t.onrender.com) |
+| ⚙️ Backend API | [ai-interview-coach-zb5e.onrender.com](https://ai-interview-coach-zb5e.onrender.com) |
+| 📖 Swagger Docs | [ai-interview-coach-zb5e.onrender.com/docs](https://ai-interview-coach-zb5e.onrender.com/docs) |
+
+## 📸 Platform Screenshots
+
+![AI Interview Coach — All Pages](docs/screenshots/collage.png)
+
+> **Dashboard · Resume Parser · Job Analyzer · Skill Matching · Live Interview · Analytics · History**  
+> Full feature walkthrough: [FEATURE_SHOWCASE.md](FEATURE_SHOWCASE.md)
+
+
+
 ## Key Features
 
 ### 1. NLP & Semantic Resume-JD Matching
