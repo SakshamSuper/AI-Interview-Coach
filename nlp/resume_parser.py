@@ -1,4 +1,5 @@
 import re
+import os
 from typing import List, Optional, Dict, Any, Tuple
 from app.backend.schemas.profiles import (
     CandidateProfile, ContactInfo, EducationItem, ExperienceItem, ProjectItem
@@ -29,16 +30,32 @@ class ResumeParser:
     CERT_REGEX = re.compile(r"\b(?:certified|certification|certificate|licence|license)\b", re.IGNORECASE)
     ROLE_KEYWORDS = ["contributor", "ambassador", "engineer", "developer", "intern", "fellow", "lead", "manager", "consultant", "analyst", "specialist", "assistant", "researcher"]
 
-    def parse(self, raw_text: str, filename: str = "resume.pdf") -> CandidateProfile:
+    def parse(self, raw_text: str, filename: str = "resume.pdf", file_path: Optional[str] = None) -> CandidateProfile:
         text = clean_text(raw_text)
         sections = detect_sections(text)
 
-        contact = self._extract_contact(text, sections.get("header", ""))
+        pdf_uris: List[str] = []
+        if file_path and file_path.lower().endswith(".pdf") and os.path.exists(file_path):
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(file_path)
+                for page in reader.pages:
+                    if "/Annots" in page:
+                        for annot in page["/Annots"]:
+                            obj = annot.get_object()
+                            a = obj.get("/A", {})
+                            uri = a.get("/URI", None)
+                            if uri and str(uri) not in pdf_uris:
+                                pdf_uris.append(str(uri))
+            except Exception:
+                pass
+
+        contact = self._extract_contact(text, sections.get("header", ""), pdf_uris=pdf_uris)
         name = self._extract_name(sections.get("header", ""), text, filename)
         skills_dict = skill_extractor.extract_skills(text)
         education = self._extract_education(sections.get("education", ""))
         experience, certs_from_exp = self._extract_experience(sections.get("experience", ""))
-        projects = self._extract_projects(sections.get("projects", ""))
+        projects = self._extract_projects(sections.get("projects", ""), pdf_uris=pdf_uris)
         certifications = self._extract_list_items(sections.get("certifications", ""))
         if certs_from_exp:
             for c in certs_from_exp:
@@ -87,7 +104,7 @@ class ResumeParser:
             return " ".join(words).title()
         return "Candidate"
 
-    def _extract_contact(self, full_text: str, header_text: str) -> ContactInfo:
+    def _extract_contact(self, full_text: str, header_text: str, pdf_uris: Optional[List[str]] = None) -> ContactInfo:
         search_scope = (header_text + "\n" + full_text[:1000]) if header_text else full_text[:1500]
 
         email_match = self.EMAIL_REGEX.search(search_scope)
@@ -95,12 +112,34 @@ class ResumeParser:
         linkedin_match = self.LINKEDIN_REGEX.search(search_scope)
         github_match = self.GITHUB_REGEX.search(search_scope)
 
+        linkedin_url = f"https://{linkedin_match.group(0)}" if linkedin_match else None
+        github_url = f"https://{github_match.group(0)}" if github_match else None
+
+        # Fallback to PDF annotations / URIs
+        if pdf_uris:
+            if not linkedin_url:
+                l_uri = next((u for u in pdf_uris if "linkedin.com/in/" in u.lower()), None)
+                if l_uri:
+                    linkedin_url = l_uri
+            if not github_url:
+                g_uri = next((u for u in pdf_uris if re.match(r"^https?://(?:www\.)?github\.com/[a-zA-Z0-9_-]+/?$", u, re.IGNORECASE)), None)
+                if g_uri:
+                    github_url = g_uri
+
+        # Extract location: e.g. 'New Delhi, India', 'San Francisco, CA'
+        location = None
+        loc_match = re.search(r"\b([A-Z][a-zA-Z\s]{2,20},\s*[A-Z][a-zA-Z\s]{2,20})\b", header_text or full_text[:500])
+        if loc_match:
+            cand = loc_match.group(1).strip()
+            if not any(w in cand.lower() for w in ["university", "college", "school", "gmail", "engineer", "developer", "science"]):
+                location = cand
+
         return ContactInfo(
             email=email_match.group(0) if email_match else None,
             phone=phone_match.group(0) if phone_match else None,
-            linkedin=f"https://{linkedin_match.group(0)}" if linkedin_match else None,
-            github=f"https://{github_match.group(0)}" if github_match else None,
-            location=None
+            linkedin=linkedin_url,
+            github=github_url,
+            location=location
         )
 
     def _extract_education(self, edu_text: str) -> List[EducationItem]:
@@ -109,61 +148,79 @@ class ResumeParser:
         items = []
         lines = [l.strip() for l in edu_text.split("\n") if l.strip()]
 
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            deg_match = None
-            for pat in self.DEGREE_PATTERNS:
-                m = pat.search(line)
+        extended_degrees = [
+            re.compile(r"\b(Ph\.?D\.?|Doctor of Philosophy)\b", re.IGNORECASE),
+            re.compile(r"\b(M\.?S\.?|Master of Science|M\.?Tech\.?|MBA|Master of Arts)\b", re.IGNORECASE),
+            re.compile(r"\b(Bachelor of Technology|Bachelor of Science|Bachelor of Engineering|B\.?Tech\.?|B\.?S\.?|B\.?E\.?)\b", re.IGNORECASE),
+            re.compile(r"\b(Class XII|Class X|High School|Senior Secondary)\b", re.IGNORECASE),
+            re.compile(r"\b(Associate Degree|High School Diploma)\b", re.IGNORECASE),
+        ]
+
+        visited = set()
+        for i, line in enumerate(lines):
+            if i in visited:
+                continue
+            deg = None
+            for p in extended_degrees:
+                m = p.search(line)
                 if m:
-                    deg_match = m.group(0)
+                    deg = m.group(0)
                     break
+            if not deg:
+                continue
+            visited.add(i)
 
-            if deg_match:
-                degree = deg_match
-                field = None
-                inst = None
-                year = None
+            field = None
+            inst = None
+            year = None
 
-                # Extract field and degree remainder from current line
-                rem = line.replace(degree, "").strip(" —–-|•,")
-                in_m = re.search(r"\bin\s+([A-Za-z\s&]+?)(?:\s*[—–|-]|\s+CGPA|\s+GPA|$)", rem, re.IGNORECASE)
-                if in_m:
-                    field = in_m.group(1).strip()
-                elif rem and not any(kw in rem.lower() for kw in ["cgpa", "gpa", "percentage", "%"]):
-                    field = rem
+            years = self.YEAR_REGEX.findall(line)
+            if years:
+                year = " - ".join(years) if len(years) >= 2 else years[-1]
 
-                # Check if next line contains institution / year
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1]
-                    next_deg = any(pat.search(next_line) for pat in self.DEGREE_PATTERNS)
-                    if not next_deg:
-                        years = self.YEAR_REGEX.findall(next_line)
-                        if years:
-                            year = " - ".join(years) if len(years) >= 2 else years[-1]
-                        inst_rem = next_line
-                        for y in years:
-                            inst_rem = inst_rem.replace(y, "")
-                        cleaned_inst = re.sub(r"[,|\-•–—()]+", " ", inst_rem).strip()
-                        if cleaned_inst:
-                            inst = cleaned_inst
-                        i += 1  # consumed next line
+            rem = line.replace(deg, "").strip(" —–-|•,")
+            if year:
+                rem = rem.replace(year, "").replace("Expected", "").strip(" —–-|•,")
 
-                if not year:
-                    years = self.YEAR_REGEX.findall(line)
-                    if years:
-                        year = " - ".join(years) if len(years) >= 2 else years[-1]
+            if any(u in rem.lower() for u in ["university", "institute", "college", "campus", "school", "indraprastha"]):
+                inst = rem
+            elif rem:
+                field = rem
 
-                if not inst:
-                    inst = "University"
+            # Inspect line i+1 for specialization or university
+            if i + 1 < len(lines) and (i + 1) not in visited:
+                next_l = lines[i + 1]
+                if any(w in next_l.lower() for w in ["in artificial", "in computer", "in data", "in software", "in information", "cgpa", "gpa"]):
+                    in_m = re.search(r"\bin\s+([A-Za-z\s&]+?)(?:\s*[—–|-]|\s+CGPA|\s+GPA|$)", next_l, re.IGNORECASE)
+                    if in_m:
+                        field = in_m.group(1).strip()
+                    visited.add(i + 1)
+                elif any(u in next_l.lower() for u in ["university", "institute", "college", "campus"]) and not inst:
+                    inst_years = self.YEAR_REGEX.findall(next_l)
+                    if inst_years and not year:
+                        year = inst_years[-1]
+                    inst = re.sub(r"[,|\-•–—()]+", " ", next_l).strip()
+                    visited.add(i + 1)
 
-                items.append(EducationItem(
-                    degree=degree,
-                    institution=inst,
-                    year=year,
-                    field_of_study=field
-                ))
-            i += 1
+            if not inst:
+                inst = "University"
+
+            # Clean school names
+            if deg in ["Class XII", "Class X"]:
+                inst = re.sub(r"\(CBSE\)|\b\d+(?:\.\d+)?%?\b|[%·|–—,\s]+", " ", inst).strip()
+                inst = re.sub(r"\s+", " ", inst).strip()
+
+            # Canonicalize BTech
+            canonical_deg = deg
+            if "bachelor of technology" in deg.lower() or "btech" in deg.lower():
+                canonical_deg = "BTech"
+
+            items.append(EducationItem(
+                degree=canonical_deg,
+                institution=inst,
+                year=year,
+                field_of_study=field
+            ))
 
         return items
 
@@ -257,13 +314,31 @@ class ResumeParser:
 
         return items, extracted_certs
 
-    def _extract_projects(self, proj_text: str) -> List[ProjectItem]:
+    def _extract_projects(self, proj_text: str, pdf_uris: Optional[List[str]] = None) -> List[ProjectItem]:
         if not proj_text:
             return []
 
         def is_bullet(line: str) -> bool:
             s = line.strip()
             return bool(re.match(r"^[\s•●\-\*–—>]", s)) or s.startswith(("\u25cf", "\u2022", "-", "*", ">", "•"))
+
+        def is_project_header(line: str) -> bool:
+            s = line.strip()
+            if not s or is_bullet(s):
+                return False
+            # Wrapped continuation lines starting with lowercase are never headers
+            if s[0].islower():
+                return False
+            # Project titles do not end with terminal punctuation
+            if s.endswith((".", ";", ",")):
+                return False
+            # Headers have separators or are short capitalized phrases
+            if any(sep in s for sep in ["—", "–", "|", " - "]):
+                return True
+            words = s.split()
+            if 1 <= len(words) <= 8 and all(w[0].isupper() for w in words if w.isalpha()):
+                return True
+            return False
 
         lines = [l.strip() for l in proj_text.split("\n") if l.strip()]
         projects_raw: List[List[str]] = []
@@ -274,15 +349,15 @@ class ResumeParser:
             if is_bullet(line):
                 in_bullets = True
                 curr_proj.append(line)
-            else:
+            elif is_project_header(line):
                 if in_bullets and curr_proj:
-                    # After seeing bullet points, a new non-bullet line marks a new project
                     projects_raw.append(curr_proj)
                     curr_proj = [line]
                     in_bullets = False
                 else:
-                    # Still gathering title/subtitle/tech stack before the first bullet
                     curr_proj.append(line)
+            else:
+                curr_proj.append(line)
 
         if curr_proj:
             projects_raw.append(curr_proj)
@@ -291,10 +366,14 @@ class ResumeParser:
         for chunk in projects_raw:
             if not chunk:
                 continue
-            header_lines = [l for l in chunk if not is_bullet(l)]
-            bullet_lines = [l for l in chunk if is_bullet(l)]
+            header_lines = [l for l in chunk if not is_bullet(l) and is_project_header(l)]
+            bullet_lines = [l for l in chunk if l not in header_lines]
             if not header_lines:
-                continue
+                non_bullets = [l for l in chunk if not is_bullet(l)]
+                if not non_bullets:
+                    continue
+                header_lines = [non_bullets[0]]
+                bullet_lines = [l for l in chunk if l != non_bullets[0]]
 
             raw_title = header_lines[0]
             parts = [p.strip() for p in raw_title.split("|")]
@@ -302,12 +381,30 @@ class ResumeParser:
             name = subparts[0].strip() if subparts else parts[0].strip()
 
             url = None
+            # Check for inline URL first
             for hl in header_lines:
                 for p in hl.split("|"):
                     if "http" in p.lower():
                         url = p.strip()
-                    elif "github" in p.lower():
+                        break
+                if url:
+                    break
+
+            # If no inline URL, match project name against pdf_uris
+            if not url and pdf_uris:
+                name_words = [w.lower() for w in re.split(r"\W+", name) if len(w) > 3]
+                for u in pdf_uris:
+                    if "github.com/" in u.lower() and "/" in u.replace("https://github.com/", ""):
+                        repo_name = u.rstrip("/").split("/")[-1].lower().replace("-", "_")
+                        if any(w in repo_name for w in name_words):
+                            url = u
+                            break
+
+            if not url:
+                for hl in header_lines:
+                    if "github" in hl.lower():
                         url = "https://github.com"
+                        break
 
             desc_lines = []
             if len(subparts) > 1:

@@ -72,18 +72,23 @@ TAXONOMY: Dict[str, Dict[str, List[str]]] = {
         "Jenkins": ["jenkins"],
         "Linux": ["linux", "ubuntu", "debian", "centos"],
         "Prometheus": ["prometheus"],
-        "Grafana": ["grafana"]
+        "Grafana": ["grafana"],
+        "Oracle Cloud": ["oracle cloud", "oci", "oracle cloud infrastructure"],
+        "Vercel": ["vercel"]
     },
     "ai_ml_domain": {
         "Machine Learning": ["machine learning", "ml", "statistical learning"],
         "Deep Learning": ["deep learning", "dl", "neural networks", "ann", "cnn", "rnn", "lstm"],
         "NLP": ["natural language processing", "nlp", "computational linguistics"],
-        "Computer Vision": ["computer vision", "cv", "opencv", "image processing"],
+        "Computer Vision": ["computer vision", "cv", "image processing"],
         "Large Language Models": ["large language models", "llm", "llms", "genai", "generative ai"],
         "RAG": ["retrieval-augmented generation", "rag", "retrieval augmented generation"],
         "Vector Embeddings": ["vector embeddings", "embeddings", "semantic search"],
         "Prompt Engineering": ["prompt engineering", "few-shot learning", "prompting"],
-        "Fine-tuning": ["fine-tuning", "finetuning", "lora", "qlora", "peft"]
+        "Fine-tuning": ["fine-tuning", "finetuning", "lora", "qlora", "peft"],
+        "Anthropic API": ["anthropic api", "anthropic", "claude api"],
+        "Agentic AI": ["agent workflow design", "agentic ai", "agentic workflows", "ai agents", "multi-agent"],
+        "Local LLMs": ["gpt4all", "local llm", "local llms", "ollama"]
     },
     "tools": {
         "Git": ["git", "github", "gitlab"],
@@ -92,7 +97,10 @@ TAXONOMY: Dict[str, Dict[str, List[str]]] = {
         "VS Code": ["vs code", "vscode", "visual studio code"],
         "Jupyter": ["jupyter", "jupyter notebook", "colab"],
         "MediaPipe": ["mediapipe"],
-        "Whisper": ["whisper"]
+        "Whisper": ["whisper"],
+        "Power BI": ["power bi", "powerbi"],
+        "Tableau": ["tableau"],
+        "Notion API": ["notion api", "notion"]
     },
     "system_design": {
         "System Design": ["system design", "software architecture", "high-level design", "hld"],
@@ -103,7 +111,9 @@ TAXONOMY: Dict[str, Dict[str, List[str]]] = {
         "Kafka": ["kafka", "apache kafka"],
         "RabbitMQ": ["rabbitmq", "message queue", "mq"],
         "Distributed Systems": ["distributed systems", "distributed computing"],
-        "Caching": ["caching", "cache", "memcached"]
+        "Caching": ["caching", "cache", "memcached"],
+        "Data Structures & Algorithms": ["data structures & algorithms", "data structures and algorithms", "dsa", "data structures"],
+        "OOP": ["object-oriented programming", "object oriented programming", "oop"]
     }
 }
 

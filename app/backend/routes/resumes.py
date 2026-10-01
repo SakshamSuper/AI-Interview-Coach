@@ -47,7 +47,7 @@ async def upload_resume(
         if not raw_text.strip():
             raise HTTPException(status_code=422, detail="Could not extract readable text from document.")
 
-        profile = resume_parser.parse(raw_text, file.filename)
+        profile = resume_parser.parse(raw_text, file.filename, file_path=file_path)
 
         # Save to database
         repo = UserRepository(db)
