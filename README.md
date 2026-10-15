@@ -31,9 +31,9 @@ Built from first principles without superficial mockups, hard-coded results, or 
 
 | Service | URL |
 |---------|-----|
-| 🖥️ Frontend | [ai-interview-coach-frontend-687t.onrender.com](https://ai-interview-coach-frontend-687t.onrender.com) |
-| ⚙️ Backend API | [ai-interview-coach-zb5e.onrender.com](https://ai-interview-coach-zb5e.onrender.com) |
-| 📖 Swagger Docs | [ai-interview-coach-zb5e.onrender.com/docs](https://ai-interview-coach-zb5e.onrender.com/docs) |
+| 🖥️ Frontend (Vercel) | [frontend-eight-orcin-39.vercel.app](https://frontend-eight-orcin-39.vercel.app) |
+| ⚙️ Backend API (Hugging Face) | [saksham5643-ai-interview-coach.hf.space](https://saksham5643-ai-interview-coach.hf.space) |
+| 📖 Swagger Docs | [saksham5643-ai-interview-coach.hf.space/docs](https://saksham5643-ai-interview-coach.hf.space/docs) |
 
 ## 📸 Platform Screenshots
 
