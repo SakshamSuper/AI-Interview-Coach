@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const backendUrl =
   process.env.BACKEND_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "https://ai-interview-coach-zb5e.onrender.com";
+  "https://saksham5643-ai-interview-coach.hf.space";
 
 const nextConfig: NextConfig = {
   async rewrites() {
