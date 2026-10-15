@@ -1,4 +1,16 @@
+---
+title: AI Interview Coach API
+emoji: 🚀
+colorFrom: indigo
+colorTo: purple
+sdk: gradio
+app_file: space_app.py
+pinned: false
+license: mit
+---
+
 # AI Interview Coach: Adaptive Multi-Agent & RAG-Powered Skill Assessment Platform
+
 
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.14-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com)
